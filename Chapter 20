@@ -1,0 +1,443 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use File::Basename;
+use File::Find;
+use Getopt::Long;
+
+my %opts = (dry_run => 1, recursive => 0, pattern => '', replace => '');
+GetOptions(
+    'dry-run!'   => \$opts{dry_run},
+    'recursive!' => \$opts{recursive},
+    'pattern=s'  => \$opts{pattern},
+    'replace=s'  => \$opts{replace},
+    'lowercase!' => \$opts{lowercase},
+    'spaces!'    => \$opts{spaces},
+) or die "Usage: $0 [options] <directory>\n";
+
+my $dir = shift @ARGV // '.';
+die "Not a directory: $dir\n" unless -d $dir;
+
+sub transform_name {
+    my $name = shift;
+    $name = lc($name) if $opts{lowercase};
+    $name =~ s/\s+/_/g if $opts{spaces};
+    if ($opts{pattern} && $opts{replace} ne '') {
+        my $pat = $opts{pattern};
+        $name =~ s/$pat/$opts{replace}/g;
+    }
+    return $name;
+}
+
+my ($renamed, $skipped, $errors) = (0, 0, 0);
+
+sub process_entry {
+    return unless -f $File::Find::name;
+    my ($base, $dir_part) = fileparse($File::Find::name);
+    my $new_base = transform_name($base);
+    return if $new_base eq $base;
+    my $new_path = $dir_part . $new_base;
+    if (-e $new_path) {
+        printf("SKIP: %s already exists\n", $new_base);
+        $skipped++;
+        return;
+    }
+    if ($opts{dry_run}) {
+        printf("WOULD RENAME: %s -> %s\n", $base, $new_base);
+        $renamed++;
+    } else {
+        if (rename($File::Find::name, $new_path)) {
+            printf("RENAMED: %s -> %s\n", $base, $new_base);
+            $renamed++;
+        } else {
+            warn "ERROR: $base: $!\n";
+            $errors++;
+        }
+    }
+}
+
+if ($opts{recursive}) {
+    find(\&process_entry, $dir);
+} else {
+    opendir(my $dh, $dir) or die "Cannot open $dir: $!\n";
+    my @files = grep { -f "$dir/$_" } readdir($dh);
+    closedir($dh);
+    for my $f (@files) {
+        local $File::Find::name = "$dir/$f";
+        process_entry();
+    }
+}
+
+printf("\nSummary: %d %s, %d skipped, %d errors\n",
+    $renamed,
+    $opts{dry_run} ? 'would rename' : 'renamed',
+    $skipped, $errors);
+print "Run with --no-dry-run to apply changes.\n" if $opts{dry_run};
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+use Text::CSV;
+use List::Util qw(sum min max);
+use POSIX qw(strftime);
+
+sub load_csv {
+    my $file = shift;
+    my $csv  = Text::CSV->new({ binary => 1, auto_diag => 1 });
+    open(my $fh, '<:encoding(UTF-8)', $file) or die "Cannot open $file: $!\n";
+    my $headers = $csv->getline($fh);
+    my @records;
+    while (my $row = $csv->getline($fh)) {
+        my %r;
+        @r{@{$headers}} = @{$row};
+        push @records, \%r;
+    }
+    close($fh);
+    return @records;
+}
+
+sub group_by {
+    my ($records_ref, $key) = @_;
+    my %groups;
+    push @{$groups{$_->{$key}}}, $_ for @{$records_ref};
+    return %groups;
+}
+
+sub numeric_stats {
+    my @values = grep { defined && /^-?\d+(\.\d+)?$/ } @_;
+    return {} unless @values;
+    my $total = sum(@values);
+    return {
+        count => scalar @values,
+        sum   => $total,
+        mean  => $total / scalar @values,
+        min   => min(@values),
+        max   => max(@values),
+    };
+}
+
+sub print_section_header {
+    my $title = shift;
+    print "\n" . '=' x 70 . "\n";
+    print '  ' . uc($title) . "\n";
+    print '=' x 70 . "\n";
+}
+
+sub print_stats_table {
+    my ($title, $groups_ref, $value_key) = @_;
+    print_section_header($title);
+    printf("%-20s %8s %10s %10s %10s %10s\n",
+        'Group', 'Count', 'Sum', 'Mean', 'Min', 'Max');
+    print '-' x 70 . "\n";
+    foreach my $group (sort keys %{$groups_ref}) {
+        my @vals = map { $_->{$value_key} } @{$groups_ref->{$group}};
+        my $s    = numeric_stats(@vals);
+        next unless $s->{count};
+        printf("%-20s %8d %10.2f %10.2f %10.2f %10.2f\n",
+            $group, $s->{count}, $s->{sum},
+            $s->{mean}, $s->{min}, $s->{max});
+    }
+}
+
+# Create sample data
+my $csv = Text::CSV->new({ binary => 1, eol => "\n" });
+open(my $wfh, '>:encoding(UTF-8)', 'sales_data.csv') or die $!;
+$csv->print($wfh, ['region', 'product', 'quarter', 'revenue']);
+$csv->print($wfh, ['North', 'Widget A', 'Q1', 12500]);
+$csv->print($wfh, ['South', 'Widget B', 'Q1',  9800]);
+$csv->print($wfh, ['North', 'Widget B', 'Q2', 11200]);
+$csv->print($wfh, ['East',  'Widget A', 'Q2',  8400]);
+$csv->print($wfh, ['South', 'Widget A', 'Q3', 15600]);
+$csv->print($wfh, ['North', 'Widget A', 'Q3', 13100]);
+close($wfh);
+
+my @records = load_csv('sales_data.csv');
+printf("Loaded %d records\n", scalar @records);
+
+my %by_region  = group_by(\@records, 'region');
+my %by_product = group_by(\@records, 'product');
+my %by_quarter = group_by(\@records, 'quarter');
+
+print_stats_table('Revenue by Region',  \%by_region,  'revenue');
+print_stats_table('Revenue by Product', \%by_product, 'revenue');
+print_stats_table('Revenue by Quarter', \%by_quarter, 'revenue');
+
+my $overall = numeric_stats(map { $_->{revenue} } @records);
+print_section_header('Overall Summary');
+printf("Total Records:     %d\n",   $overall->{count});
+printf("Total Revenue:     %.2f\n", $overall->{sum});
+printf("Average Revenue:   %.2f\n", $overall->{mean});
+printf("Highest Sale:      %.2f\n", $overall->{max});
+printf("Lowest Sale:       %.2f\n", $overall->{min});
+printf("Generated:         %s\n",   strftime('%Y-%m-%d %H:%M:%S', localtime));
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+use POSIX qw(strftime);
+use File::Path qw(make_path);
+
+my %CONFIG = (
+    log_dir        => '/tmp/healthcheck',
+    disk_threshold => 85,
+    mem_threshold  => 90,
+    load_threshold => 4.0,
+    check_services => [qw(sshd cron)],
+);
+
+make_path($CONFIG{log_dir}) unless -d $CONFIG{log_dir};
+my $timestamp   = strftime('%Y%m%d_%H%M%S', localtime);
+my $report_file = "$CONFIG{log_dir}/health_$timestamp.txt";
+
+my (@alerts, @ok_items);
+
+sub record {
+    my ($status, $item, $detail) = @_;
+    if ($status eq 'ALERT') { push @alerts,   "[$item] $detail" }
+    else                     { push @ok_items, "[$item] $detail" }
+}
+
+sub check_disk_usage {
+    my @lines = `df -h 2>/dev/null`;
+    foreach my $line (@lines) {
+        next unless $line =~ /^\/|^[A-Z]:/;
+        my @f = split(' ', $line);
+        next unless @f >= 5;
+        my ($pct, $mount) = ($f[-2], $f[-1]);
+        $pct =~ s/%//;
+        next unless $pct =~ /^\d+$/;
+        if ($pct >= $CONFIG{disk_threshold}) {
+            record('ALERT', 'DISK', "$mount is at ${pct}% capacity");
+        } else {
+            record('OK',    'DISK', "$mount: ${pct}%");
+        }
+    }
+}
+
+sub check_memory {
+    if (open(my $fh, '<', '/proc/meminfo')) {
+        my %mem;
+        while (<$fh>) { $mem{$1} = $2 if /^(\w+):\s+(\d+)/ }
+        close($fh);
+        my $total = $mem{MemTotal} // 0;
+        my $free  = ($mem{MemFree} // 0)
+                  + ($mem{Buffers} // 0)
+                  + ($mem{Cached}  // 0);
+        my $used_pct = $total > 0 ? int(($total - $free) / $total * 100) : 0;
+        my $level    = $used_pct >= $CONFIG{mem_threshold} ? 'ALERT' : 'OK';
+        record($level, 'MEM',
+            sprintf('Used: %d%% (%d MB of %d MB)',
+                $used_pct, ($total-$free)/1024, $total/1024));
+    } else {
+        record('OK', 'MEM', 'Memory check not available on this platform');
+    }
+}
+
+sub check_load {
+    if (open(my $fh, '<', '/proc/loadavg')) {
+        my $line   = <$fh>;
+        close($fh);
+        my ($load1) = split(' ', $line);
+        my $level   = $load1 >= $CONFIG{load_threshold} ? 'ALERT' : 'OK';
+        record($level, 'LOAD', "1-min average: $load1");
+    } else {
+        record('OK', 'LOAD', 'Load check not available on this platform');
+    }
+}
+
+sub check_process {
+    my $name   = shift;
+    my @procs  = `pgrep -x "$name" 2>/dev/null`;
+    if (@procs) {
+        record('OK',    'PROC', "$name is running");
+    } else {
+        record('ALERT', 'PROC', "$name is NOT running");
+    }
+}
+
+check_disk_usage();
+check_memory();
+check_load();
+check_process($_) for @{$CONFIG{check_services}};
+
+open(my $rep, '>', $report_file) or die "Cannot write report: $!\n";
+
+my $status = @alerts ? 'DEGRADED' : 'HEALTHY';
+my $header = "System Health Report - $timestamp - Status: $status";
+print  $rep "=" x length($header) . "\n";
+print  $rep "$header\n";
+print  $rep "=" x length($header) . "\n\n";
+
+if (@alerts) {
+    print $rep "ALERTS (" . scalar(@alerts) . "):\n";
+    print $rep "  $_\n" for @alerts;
+    print $rep "\n";
+}
+
+print $rep "OK (" . scalar(@ok_items) . "):\n";
+print $rep "  $_\n" for @ok_items;
+close($rep);
+
+print "ALERTS:\n", map { "  $_\n" } @alerts if @alerts;
+print "All checks OK.\n" unless @alerts;
+printf("Report saved: %s\n", $report_file);
+exit(@alerts ? 1 : 0);
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+use POSIX qw(strftime);
+use List::Util qw(sum max min);
+
+my $LOG_PATTERN = qr/
+    ^(\S+)\s+            # ip address
+    \S+\s+\S+\s+       # ident auth
+    \[([^\]]+)\]\s+   # timestamp
+    "(\S+)\s+(\S+)\s+\S+"\s+  # method path proto
+    (\d{3})\s+           # status
+    (\d+|-)              # bytes
+/x;
+
+sub parse_log_file {
+    my $path = shift;
+    my @records;
+    open(my $fh, '<', $path) or die "Cannot open $path: $!\n";
+    while (my $line = <$fh>) {
+        chomp $line;
+        if ($line =~ $LOG_PATTERN) {
+            push @records, {
+                ip     => $1, time   => $2,
+                method => $3, path   => $4,
+                status => $5, bytes  => ($6 eq '-' ? 0 : $6),
+            };
+        }
+    }
+    close($fh);
+    return @records;
+}
+
+sub analyze_records {
+    my @recs = @_;
+    my (%status, %ip, %path, @byte_sizes);
+    my $errors = 0;
+    foreach my $r (@recs) {
+        $status{$r->{status}}++;
+        $ip{$r->{ip}}++;
+        $path{$r->{path}}++;
+        push @byte_sizes, $r->{bytes} if $r->{bytes} > 0;
+        $errors++ if $r->{status} >= 400;
+    }
+    my $total       = scalar @recs;
+    my $total_bytes = @byte_sizes ? sum(@byte_sizes) : 0;
+    return {
+        total        => $total,
+        errors       => $errors,
+        error_rate   => $total > 0 ? sprintf('%.1f', $errors/$total*100) : '0.0',
+        total_bytes  => $total_bytes,
+        avg_bytes    => @byte_sizes ? int($total_bytes / scalar @byte_sizes) : 0,
+        status_dist  => \%status,
+        top_ips      => [sort { $ip{$b}   <=> $ip{$a}   } keys %ip  ][0..4],
+        top_paths    => [sort { $path{$b} <=> $path{$a} } keys %path][0..4],
+        ip_counts    => \%ip,
+        path_counts  => \%path,
+    };
+}
+
+sub generate_report {
+    my ($stats, $filename) = @_;
+    my $ts = strftime('%Y-%m-%d %H:%M:%S', localtime);
+    print "=" x 60 . "\n";
+    print "  ACCESS LOG ANALYSIS REPORT\n";
+    printf("  Generated: %s\n", $ts);
+    printf("  Source:    %s\n", $filename);
+    print "=" x 60 . "\n\n";
+    printf("Total Requests:  %d\n",  $stats->{total});
+    printf("Total Errors:    %d (%.1f%%)\n", $stats->{errors}, $stats->{error_rate});
+    printf("Total Data:      %.2f MB\n",  $stats->{total_bytes}/1_048_576);
+    printf("Avg Response:    %d bytes\n", $stats->{avg_bytes});
+    print "\nHTTP Status Codes:\n";
+    foreach my $code (sort keys %{$stats->{status_dist}}) {
+        printf("  %s: %d\n", $code, $stats->{status_dist}{$code});
+    }
+    print "\nTop Client IPs:\n";
+    foreach my $ip (@{$stats->{top_ips}}) {
+        next unless defined $ip;
+        printf("  %-18s %d requests\n", $ip, $stats->{ip_counts}{$ip});
+    }
+}
+
+# Create a sample log
+open(my $wfh, '>', 'access.log') or die $!;
+print $wfh '192.168.1.1 - - [15/Mar/2026:14:00:01 +0000] "GET /index.html HTTP/1.1" 200 1234' . "\n";
+print $wfh '10.0.0.1 - - [15/Mar/2026:14:00:02 +0000] "POST /api/login HTTP/1.1" 200 512' . "\n";
+print $wfh '192.168.1.1 - - [15/Mar/2026:14:00:03 +0000] "GET /missing.html HTTP/1.1" 404 256' . "\n";
+close($wfh);
+
+my $log_file = 'access.log';
+printf("Parsing: %s\n", $log_file);
+my @records = parse_log_file($log_file);
+printf("Parsed %d log entries.\n", scalar @records);
+my $stats = analyze_records(@records);
+generate_report($stats, $log_file);
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+# Install: cpanm LWP::UserAgent Mojo::DOM Text::CSV
+use LWP::UserAgent;
+use Mojo::DOM;
+use Text::CSV;
+use Time::HiRes qw(sleep);
+
+my $ua = LWP::UserAgent->new(
+    agent   => 'PerlScraper/1.0 (educational project)',
+    timeout => 30,
+);
+
+my $csv = Text::CSV->new({ binary => 1, eol => "\n" });
+open(my $out, '>:encoding(UTF-8)', 'scraped_data.csv')
+    or die "Cannot open output: $!\n";
+$csv->print($out, ['title', 'price', 'rating', 'url']);
+
+my $base_url  = 'https://books.toscrape.com';
+my $page_url  = $base_url . '/catalogue/page-1.html';
+my $max_pages = 3;
+my $page_num  = 0;
+my $total     = 0;
+
+while ($page_url && $page_num < $max_pages) {
+    $page_num++;
+    printf("Scraping page %d: %s\n", $page_num, $page_url);
+
+    my $resp = $ua->get($page_url);
+    unless ($resp->is_success()) {
+        warn "Failed: " . $resp->status_line() . "\n";
+        last;
+    }
+
+    my $dom = Mojo::DOM->new($resp->decoded_content());
+
+    $dom->find('article.product_pod')->each(sub {
+        my $el    = shift;
+        my $title = $el->at('h3 a') ? $el->at('h3 a')->attr('title') // '' : '';
+        my $price = $el->at('.price_color') ? $el->at('.price_color')->text() // '' : '';
+        my $rating_el = $el->at('.star-rating');
+        my $rating_class = $rating_el ? ($rating_el->attr('class') // '') : '';
+        my ($rating) = $rating_class =~ /star-rating (\w+)/;
+        my $rel_url   = $el->at('h3 a') ? ($el->at('h3 a')->attr('href') // '') : '';
+        my $full_url  = $base_url . '/catalogue/' . $rel_url;
+        $price =~ s/[^0-9.]//g;
+        $csv->print($out, [$title, $price, $rating // '', $full_url]);
+        $total++;
+    });
+
+    my $next = $dom->at('li.next a');
+    $page_url = $next ? $base_url . '/catalogue/' . $next->attr('href') : undef;
+
+    sleep(1.0) if $page_url;
+}
+
+close($out);
+printf("\nScraped %d books from %d pages. Saved to scraped_data.csv\n",
+    $total, $page_num);
