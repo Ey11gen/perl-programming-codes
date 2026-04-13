@@ -1,0 +1,187 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $a = 20;
+my $b = 6;
+
+my $sum        = $a + $b;
+my $difference = $a - $b;
+my $product    = $a * $b;
+my $quotient   = $a / $b;
+my $remainder  = $a % $b;
+my $power      = $a ** 2;
+
+print "Sum:        " . $sum        . "\n";
+print "Difference: " . $difference . "\n";
+print "Product:    " . $product    . "\n";
+print "Quotient:   " . $quotient   . "\n";
+print "Remainder:  " . $remainder  . "\n";
+print "Power:      " . $power      . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my @days = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday");
+
+print "First element:  " . $days[0] . "\n";
+print "Third element:  " . $days[2] . "\n";
+print "Last element:   " . $days[4] . "\n";
+print "Array length:   " . scalar(@days) . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $x = 15;
+my $y = 20;
+
+print "x == y: " . ($x == $y) . "\n";
+print "x != y: " . ($x != $y) . "\n";
+print "x <  y: " . ($x <  $y) . "\n";
+print "x >  y: " . ($x >  $y) . "\n";
+print "x <= y: " . ($x <= $y) . "\n";
+print "x >= y: " . ($x >= $y) . "\n";
+
+my $fruit_a = "apple";
+my $fruit_b = "banana";
+
+print "apple eq banana: " . ($fruit_a eq $fruit_b) . "\n";
+print "apple ne banana: " . ($fruit_a ne $fruit_b) . "\n";
+print "apple lt banana: " . ($fruit_a lt $fruit_b) . "\n";
+print "apple gt banana: " . ($fruit_a gt $fruit_b) . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $score = 100;
+
+$score += 25;
+print "After adding 25: "       . $score . "\n";
+
+$score -= 10;
+print "After subtracting 10: "  . $score . "\n";
+
+$score *= 2;
+print "After multiplying by 2: ". $score . "\n";
+
+$score /= 3;
+print "After dividing by 3: "   . $score . "\n";
+
+$score++;
+print "After incrementing: "    . $score . "\n";
+
+$score--;
+print "After decrementing: "    . $score . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my %person = (
+    name => "Carlos",
+    age  => 34,
+    city => "Madrid",
+);
+
+print "Name: " . $person{name} . "\n";
+print "Age:  " . $person{age}  . "\n";
+print "City: " . $person{city} . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $temperature = 22;
+my $is_raining  = 0;
+
+my $good_weather = ($temperature > 15 && $is_raining == 0);
+print "Good weather to go out: " . $good_weather . "\n";
+
+my $stay_in = ($temperature < 10 || $is_raining == 1);
+print "Better to stay inside:  " . $stay_in     . "\n";
+
+my $not_raining = !$is_raining;
+print "It is not raining:      " . $not_raining  . "\n";
+
+# Ternary operator
+my $age = 20;
+my $status = ($age >= 18) ? "adult" : "minor";
+print "Status: " . $status . "\n";
+
+my $score = 75;
+my $grade = ($score >= 90) ? "A" :
+            ($score >= 80) ? "B" :
+            ($score >= 70) ? "C" : "F";
+print "Grade: " . $grade . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $age        = 28;
+my $price      = 19.99;
+my $first_name = "Maria";
+my $greeting   = "Hello, " . $first_name . "!";
+
+print $age      . "\n";
+print $price    . "\n";
+print $greeting . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $word      = "Perl";
+my $separator = "-";
+
+my $repeated  = $word x 3;
+my $joined    = $word . " " . "Programming";
+my $line      = $separator x 30;
+
+print $repeated . "\n";
+print $joined   . "\n";
+print $line     . "\n";
+
+# String append operator
+my $message = "Dear Customer,\n";
+$message .= "Your order has been received.\n";
+$message .= "Thank you for shopping with us.\n";
+
+print $message;
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my @values = (0, 1, -1, "", "0", "false", "hello", 0.1, undef);
+
+foreach my $v (@values) {
+    my $truth;
+    if ($v) {
+        $truth = "TRUE";
+    } else {
+        $truth = "FALSE";
+    }
+    my $display = defined($v) ? $v : "undef";
+    print "Value: " . sprintf("%-8s", $display) . " -> " . $truth . "\n";
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $temperature;
+
+if (defined $temperature) {
+    print "Temperature is: " . $temperature . "\n";
+} else {
+    print "Temperature has not been set yet.\n";
+}
+
+# Defined-or operator example
+my $value;
+my $result = $value // "default";
+print "Result: " . $result . "\n";
