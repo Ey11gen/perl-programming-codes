@@ -1,0 +1,247 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my %scores = (
+    "Alice" => 85,
+    "Bob"   => 72,
+    "Carol" => 91,
+);
+
+print "Before: Bob = " . $scores{"Bob"} . "\n";
+$scores{"Bob"} = 88;
+print "After:  Bob = " . $scores{"Bob"} . "\n";
+
+$scores{"David"} = 79;
+print "David added: " . $scores{"David"} . "\n";
+
+my %population = (
+    "Tokyo"  => 13_960_000,
+    "Madrid" => 3_305_000,
+    "London" => 8_982_000,
+);
+
+if (exists $population{"Madrid"}) {
+    print "Madrid population: " . $population{"Madrid"} . "\n";
+}
+
+if (!exists $population{"Sydney"}) {
+    print "Sydney is not in the hash.\n";
+}
+
+my %menu = (
+    "burger" => 8.50,
+    "pizza"  => 11.00,
+    "salad"  => 6.75,
+    "pasta"  => 9.25,
+);
+
+my $removed_price = delete $menu{"salad"};
+print "Removed salad, price was: " . $removed_price . "\n";
+
+if (!exists $menu{"salad"}) {
+    print "Salad is no longer on the menu.\n";
+}
+
+print "Remaining items: " . join(", ", sort keys %menu) . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my %capital_cities = (
+    "France"  => "Paris",
+    "Germany" => "Berlin",
+    "Japan"   => "Tokyo",
+    "Spain"   => "Madrid",
+    "Brazil"  => "Brasilia",
+);
+
+print "The capital of France is: " . $capital_cities{"France"}  . "\n";
+print "The capital of Japan is:  " . $capital_cities{"Japan"}   . "\n";
+print "The capital of Spain is:  " . $capital_cities{"Spain"}   . "\n";
+
+my %inventory;
+$inventory{"apples"}  = 150;
+$inventory{"bananas"} = 73;
+$inventory{"oranges"} = 210;
+$inventory{"grapes"}  = 0;
+
+print "Apples in stock:  " . $inventory{"apples"}  . "\n";
+print "Bananas in stock: " . $inventory{"bananas"} . "\n";
+print "Grapes in stock:  " . $inventory{"grapes"}  . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $text  = "the cat sat on the mat the cat sat near the hat";
+my @words = split(" ", $text);
+
+my %word_count;
+foreach my $word (@words) {
+    $word_count{$word}++;
+}
+
+print "Word frequencies:\n";
+foreach my $word (sort keys %word_count) {
+    printf("  %-8s : %d\n", $word, $word_count{$word});
+}
+
+print "\nBy frequency (descending):\n";
+foreach my $word (sort { $word_count{$b} <=> $word_count{$a} || $a cmp $b } keys %word_count) {
+    printf("  %-8s : %d\n", $word, $word_count{$word});
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my @products = (
+    { name => "Laptop",   category => "Electronics", price => 999 },
+    { name => "Shirt",    category => "Clothing",    price => 29  },
+    { name => "Phone",    category => "Electronics", price => 699 },
+    { name => "Trousers", category => "Clothing",    price => 55  },
+    { name => "Tablet",   category => "Electronics", price => 449 },
+    { name => "Jacket",   category => "Clothing",    price => 120 },
+);
+
+my %by_category;
+foreach my $product (@products) {
+    push @{ $by_category{ $product->{category} } }, $product->{name};
+}
+
+foreach my $cat (sort keys %by_category) {
+    print $cat . ": " . join(", ", @{ $by_category{$cat} }) . "\n";
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my %country_code = (
+    "United States"  => "US",
+    "United Kingdom" => "GB",
+    "Germany"        => "DE",
+    "France"         => "FR",
+    "Spain"          => "ES",
+);
+
+print "--- All keys (sorted) ---\n";
+foreach my $country (sort keys %country_code) {
+    print $country . " => " . $country_code{$country} . "\n";
+}
+
+print "\n--- All values ---\n";
+foreach my $code (sort values %country_code) {
+    print $code . "\n";
+}
+
+my %temperatures = (
+    "Monday"    => 18,
+    "Tuesday"   => 21,
+    "Wednesday" => 19,
+    "Thursday"  => 23,
+    "Friday"    => 25,
+);
+
+print "\nDaily temperatures:\n";
+while (my ($day, $temp) = each %temperatures) {
+    printf("  %-12s %d degrees\n", $day, $temp);
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my %http_status = (
+    200 => "OK",
+    301 => "Moved Permanently",
+    302 => "Found",
+    400 => "Bad Request",
+    401 => "Unauthorized",
+    403 => "Forbidden",
+    404 => "Not Found",
+    500 => "Internal Server Error",
+    503 => "Service Unavailable",
+);
+
+my @codes_to_check = (200, 404, 500, 999);
+
+foreach my $code (@codes_to_check) {
+    if (exists $http_status{$code}) {
+        printf("Code %d: %s\n", $code, $http_status{$code});
+    } else {
+        printf("Code %d: Unknown status code\n", $code);
+    }
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my %config = (
+    host     => "db.example.com",
+    port     => 5432,
+    database => "production",
+    username => "app_user",
+    timeout  => 30,
+    ssl      => 1,
+);
+
+my @connection_fields = @config{qw(host port database)};
+print "Host: "     . $connection_fields[0] . "\n";
+print "Port: "     . $connection_fields[1] . "\n";
+print "Database: " . $connection_fields[2] . "\n";
+
+@config{qw(timeout ssl)} = (60, 0);
+print "Updated timeout: " . $config{timeout} . "\n";
+print "Updated ssl:     " . $config{ssl}     . "\n";
+
+my %abbrev_to_name = (
+    ES => "Spain",
+    FR => "France",
+    DE => "Germany",
+    JP => "Japan",
+    US => "United States",
+);
+
+my %name_to_abbrev = reverse %abbrev_to_name;
+
+print "Code for Germany: " . $name_to_abbrev{"Germany"}   . "\n";
+print "Code for Japan:   " . $name_to_abbrev{"Japan"}     . "\n";
+print "Name for ES:      " . $abbrev_to_name{"ES"}        . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my %employees = (
+    "E001" => {
+        name       => "Alice Moreno",
+        department => "Engineering",
+        salary     => 72000,
+    },
+    "E002" => {
+        name       => "Bob Chen",
+        department => "Marketing",
+        salary     => 65000,
+    },
+    "E003" => {
+        name       => "Carol Singh",
+        department => "Engineering",
+        salary     => 78000,
+    },
+);
+
+print "Employee E001:\n";
+print "  Name:       " . $employees{"E001"}{name}       . "\n";
+print "  Department: " . $employees{"E001"}{department} . "\n";
+print "  Salary:     " . $employees{"E001"}{salary}     . "\n";
+
+print "\nAll employees in Engineering:\n";
+foreach my $id (sort keys %employees) {
+    if ($employees{$id}{department} eq "Engineering") {
+        print "  " . $id . ": " . $employees{$id}{name} . "\n";
+    }
+}
