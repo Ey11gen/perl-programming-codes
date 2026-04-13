@@ -1,0 +1,203 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+for (my $i = 1; $i <= 10; $i++) {
+    print "Count: " . $i . "\n";
+}
+
+# Using index to access array elements
+my @names = ("Alice", "Bob", "Carol", "David");
+
+for (my $i = 0; $i < scalar(@names); $i++) {
+    print "Position " . $i . ": " . $names[$i] . "\n";
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $age    = 25;
+my $salary = 45000;
+
+if ($age >= 18 && $salary >= 30000) {
+    print "Loan application approved.\n";
+} elsif ($age >= 18 && $salary < 30000) {
+    print "Age requirement met, but salary is too low.\n";
+} elsif ($age < 18) {
+    print "Applicant must be at least 18 years old.\n";
+} else {
+    print "Application cannot be processed.\n";
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $number = 10;
+
+do {
+    print "Current value: " . $number . "\n";
+    $number++;
+} while ($number < 5);
+
+print "Done. Final value: " . $number . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my @fruits = ("apple", "banana", "cherry", "date", "elderberry");
+
+foreach my $fruit (@fruits) {
+    print "I like " . $fruit . "\n";
+}
+
+# Using the default $_ variable
+foreach (@fruits) {
+    print "Also: " . $_ . "\n";
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $temperature = 28;
+
+if ($temperature > 25) {
+    print "It is warm outside.\n";
+}
+
+print "Program complete.\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $hour = 14;
+
+if ($hour < 12) {
+    print "Good morning!\n";
+} else {
+    print "Good afternoon or evening!\n";
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $score = 78;
+
+if ($score >= 90) {
+    print "Grade: A\n";
+} elsif ($score >= 80) {
+    print "Grade: B\n";
+} elsif ($score >= 70) {
+    print "Grade: C\n";
+} elsif ($score >= 60) {
+    print "Grade: D\n";
+} else {
+    print "Grade: F\n";
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my @matrix = ([1, 2, 3], [4, 5, 6], [7, 8, 9]);
+
+OUTER: foreach my $row (@matrix) {
+    foreach my $cell (@{$row}) {
+        if ($cell == 5) {
+            print "Found 5, stopping all loops.\n";
+            last OUTER;
+        }
+        print "Cell: " . $cell . "\n";
+    }
+}
+
+print "Search complete.\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+# next - skip even numbers
+my @numbers = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+
+foreach my $num (@numbers) {
+    if ($num % 2 == 0) {
+        next;
+    }
+    print "Odd number: " . $num . "\n";
+}
+
+# last - stop at sentinel value
+my @words = ("cat", "dog", "bird", "STOP", "fish", "snake");
+
+foreach my $word (@words) {
+    if ($word eq "STOP") {
+        last;
+    }
+    print "Processing: " . $word . "\n";
+}
+
+print "Loop ended.\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $age   = 21;
+my $score = 45;
+my $name  = "Sophia";
+
+print "You are an adult.\n" if $age >= 18;
+print "Score is low!\n"     unless $score >= 50;
+print "Hello, " . $name . "!\n" if length($name) > 0;
+
+my @cities = ("Madrid", "Barcelona", "Seville", "Valencia");
+print $_ . "\n" foreach @cities;
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $username = "alice";
+
+unless ($username eq "") {
+    print "Welcome, " . $username . "!\n";
+}
+
+my $logged_in = 0;
+
+unless ($logged_in) {
+    print "Please log in to continue.\n";
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $password_attempts = 0;
+my $max_attempts      = 3;
+
+until ($password_attempts >= $max_attempts) {
+    print "Enter password (attempt " . ($password_attempts + 1) . " of " . $max_attempts . ")\n";
+    $password_attempts++;
+}
+
+print "Maximum attempts reached.\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $count = 1;
+
+while ($count <= 5) {
+    print "Iteration number: " . $count . "\n";
+    $count++;
+}
+
+print "Loop has finished.\n";
