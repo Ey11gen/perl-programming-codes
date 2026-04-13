@@ -1,0 +1,173 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my @sentences = (
+    "The cat is on the mat",
+    "A catalog of categories",
+    "Concatenate these strings",
+    "I have a cat at home",
+);
+
+foreach my $s (@sentences) {
+    if ($s =~ /\bcat\b/) {
+        print "Whole word match: " . $s . "\n";
+    } else {
+        print "No whole word:    " . $s . "\n";
+    }
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $date_string = "Today is 2026-03-15 and tomorrow is 2026-03-16";
+
+if ($date_string =~ /(\d{4})-(\d{2})-(\d{2})/) {
+    print "Full match: " . $& . "\n";
+    print "Year:       " . $1 . "\n";
+    print "Month:      " . $2 . "\n";
+    print "Day:        " . $3 . "\n";
+}
+
+my $log_line = "ERROR [2026-03-15 14:23:07] Connection refused at server-01";
+
+my ($level, $date, $time, $message) =
+    $log_line =~ /^(\w+) \[(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})\] (.+)$/;
+
+print "Level:   " . $level   . "\n";
+print "Date:    " . $date    . "\n";
+print "Time:    " . $time    . "\n";
+print "Message: " . $message . "\n";
+
+my @colors = ("red", "blue", "green", "yellow", "reddish", "navy blue");
+
+foreach my $color (@colors) {
+    if ($color =~ /\b(red|blue|green)\b/) {
+        print $color . " contains a primary color word: " . $1 . "\n";
+    }
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my @words = ("cat", "bat", "rat", "hat", "sat", "fat", "mat", "vat");
+
+foreach my $word (@words) {
+    if ($word =~ /[cbr]at/) {
+        print $word . " matches [cbr]at\n";
+    }
+}
+
+my @inputs = ("user123", "hello world", "abc", "   ", "Test99!", "");
+
+foreach my $input (@inputs) {
+    next if $input eq '';
+    printf("%-15s", "[$input]");
+    print " has digit"      if $input =~ /\d/;
+    print " has whitespace" if $input =~ /\s/;
+    print " has word-char"  if $input =~ /\w/;
+    print "\n";
+}
+
+my @phone_numbers = ("555-1234", "555-12345", "55-1234", "5551234", "(555)1234");
+
+foreach my $num (@phone_numbers) {
+    if ($num =~ /^\d{3}-\d{4}$/) {
+        print $num . " is a valid 3-4 format number\n";
+    } else {
+        print $num . " does NOT match the expected format\n";
+    }
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $phone = "Call us at +1 (800) 555-0199 for assistance";
+
+if ($phone =~ /
+    \+?           # optional leading plus sign
+    (\d{1,3})     # country code: one to three digits
+    \s*           # optional whitespace
+    \(?           # optional opening parenthesis
+    (\d{3})       # area code: exactly three digits
+    \)?           # optional closing parenthesis
+    [\s.-]?       # separator: space, dot, or hyphen, optional
+    (\d{3})       # exchange: three digits
+    [\s.-]?       # separator
+    (\d{4})       # subscriber: four digits
+/x) {
+    print "Country code: " . $1 . "\n";
+    print "Area code:    " . $2 . "\n";
+    print "Exchange:     " . $3 . "\n";
+    print "Subscriber:   " . $4 . "\n";
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $text = "Prices: item1=\$12.50, item2=\$8.99, item3=\$24.75, item4=\$6.00";
+
+my @prices;
+while ($text =~ /\\$(\d+\.\d{2})/g) {
+    push @prices, $1;
+}
+
+print "Found prices: " . join(", ", @prices) . "\n";
+
+my $total = 0;
+$total += $_ foreach @prices;
+printf("Total: \$%.2f\n", $total);
+
+my $html = "<b>Bold</b> and <i>italic</i> and <u>underline</u> text here";
+my @tags  = ($html =~ /<([a-z]+)>/g);
+print "HTML tags found: " . join(", ", @tags) . "\n";
+
+my @words     = ("apple2", "3banana", "cherry", "99", "plum4");
+my @alpha_only = grep { /^[a-zA-Z]+$/ } @words;
+print "Alpha-only words: " . join(", ", @alpha_only) . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my @strings = ("The cat sat on the mat", "A catalog of items",
+               "No match here", "Concatenate");
+
+foreach my $str (@strings) {
+    if ($str =~ /cat/) {
+        print "Match found in: " . $str . "\n";
+    } else {
+        print "No match in:    " . $str . "\n";
+    }
+}
+
+my $email = "user\@example.com";
+if ($email !~ /@/) {
+    print "This does not look like a valid email address.\n";
+} else {
+    print "The email contains an at sign.\n";
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $text = "I love cats. My cat is named Whiskers. A cat is a wonderful pet.";
+
+(my $singular = $text) =~ s/cats/felines/;
+print "Replace first: " . $singular . "\n";
+
+(my $global = $text) =~ s/cat/feline/g;
+print "Replace all:   " . $global   . "\n";
+
+my $sentence = "Perl is great. PERL is powerful. perl is practical.";
+(my $cleaned = $sentence) =~ s/perl/Perl/gi;
+print $cleaned . "\n";
+
+my $data = "line1\nline2\nline3";
+(my $numbered = $data) =~ s/^/>> /mg;
+print $numbered . "\n";
