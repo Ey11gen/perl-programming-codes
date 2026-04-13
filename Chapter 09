@@ -1,0 +1,268 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+sub create_user_record {
+    my %args = @_;
+
+    my $name  = $args{name}  // die "create_user_record requires a name";
+    my $email = $args{email} // die "create_user_record requires an email";
+    my $age   = $args{age}   // 0;
+    my $role  = $args{role}  // "user";
+
+    return {
+        name  => $name,
+        email => $email,
+        age   => $age,
+        role  => $role,
+    };
+}
+
+my $user1 = create_user_record(
+    name  => "Alice",
+    email => "alice\@example.com",
+    age   => 30,
+    role  => "admin",
+);
+
+my $user2 = create_user_record(
+    email => "bob\@example.com",
+    name  => "Bob",
+);
+
+printf("User: %s (%s), Age: %d, Role: %s\n",
+        $user1->{name}, $user1->{email}, $user1->{age}, $user1->{role});
+printf("User: %s (%s), Age: %d, Role: %s\n",
+        $user2->{name}, $user2->{email}, $user2->{age}, $user2->{role});
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+sub greet {
+    my ($name, $language) = @_;
+
+    if ($language && $language eq "Spanish") {
+        print "Hola, " . $name . "!\n";
+    } elsif ($language && $language eq "French") {
+        print "Bonjour, " . $name . "!\n";
+    } else {
+        print "Hello, " . $name . "!\n";
+    }
+}
+
+greet("Maria", "Spanish");
+greet("Pierre", "French");
+greet("Alice", "German");
+greet("Bob");
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+sub factorial {
+    my $n = shift;
+
+    if ($n < 0) {
+        die "factorial is not defined for negative numbers\n";
+    }
+
+    return 1 if $n == 0 || $n == 1;
+
+    return $n * factorial($n - 1);
+}
+
+foreach my $num (0, 1, 5, 10, 12) {
+    printf("%2d! = %d\n", $num, factorial($num));
+}
+
+sub print_nested {
+    my ($data, $indent) = @_;
+    $indent //= 0;
+    my $prefix = '  ' x $indent;
+
+    foreach my $key (sort keys %{$data}) {
+        my $value = $data->{$key};
+        if (ref($value) eq 'HASH') {
+            print $prefix . $key . ":\n";
+            print_nested($value, $indent + 1);
+        } else {
+            print $prefix . $key . ": " . $value . "\n";
+        }
+    }
+}
+
+my %config = (
+    database => {
+        host => "localhost",
+        port => 5432,
+        credentials => {
+            user => "admin",
+            pass => "secret",
+        },
+    },
+    app => {
+        debug => 0,
+        name  => "MyApp",
+    },
+);
+
+print_nested(\%config);
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+sub calculate_stats {
+    my @numbers = @_;
+
+    my $count = scalar @numbers;
+    return (0, 0, 0, 0) if $count == 0;
+
+    my $sum = 0;
+    $sum += $_ foreach @numbers;
+
+    my @sorted = sort { $a <=> $b } @numbers;
+    my $min = $sorted[0];
+    my $max = $sorted[-1];
+    my $avg = $sum / $count;
+
+    return ($min, $max, $sum, $avg);
+}
+
+my @data = (45, 72, 38, 91, 55, 63, 29, 84);
+my ($min, $max, $sum, $avg) = calculate_stats(@data);
+
+printf("Count: %d\n",   scalar @data);
+printf("Min:   %d\n",   $min);
+printf("Max:   %d\n",   $max);
+printf("Sum:   %d\n",   $sum);
+printf("Avg:   %.2f\n", $avg);
+
+sub divide {
+    my ($numerator, $denominator) = @_;
+    if ($denominator == 0) {
+        print "Error: division by zero\n";
+        return;
+    }
+    return $numerator / $denominator;
+}
+
+sub classify_number {
+    my $n = shift;
+    return "zero"     if $n == 0;
+    return "positive" if $n > 0;
+    return "negative";
+}
+
+printf("10 / 4   = %.2f\n", divide(10, 4));
+foreach my $n (-3, 0, 7) {
+    printf("%3d is %s\n", $n, classify_number($n));
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $message = "I am the outer message.";
+
+sub demonstrate_scope {
+    my $message = "I am the inner message.";
+    print "Inside subroutine: " . $message . "\n";
+}
+
+print "Before call: " . $message . "\n";
+demonstrate_scope();
+print "After call:  " . $message . "\n";
+
+sub create_greeting {
+    my $name     = shift // 'Friend';
+    my $language = shift // 'English';
+    my $formal   = shift // 0;
+
+    my $salutation;
+    if ($formal) {
+        $salutation = ($language eq "Spanish") ? "Estimado" : "Dear";
+    } else {
+        $salutation = ($language eq "Spanish") ? "Hola" : "Hello";
+    }
+
+    return $salutation . ", " . $name . "!";
+}
+
+print create_greeting("Maria", "Spanish", 1) . "\n";
+print create_greeting("Bob") . "\n";
+print create_greeting() . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+sub is_valid_student {
+    my $student = shift;
+    return 0 unless defined $student->{name} && $student->{name} ne "";
+    return 0 unless defined $student->{score};
+    return 0 unless $student->{score} >= 0 && $student->{score} <= 100;
+    return 1;
+}
+
+sub compute_grade {
+    my $score = shift;
+    return 'A' if $score >= 90;
+    return 'B' if $score >= 80;
+    return 'C' if $score >= 70;
+    return 'D' if $score >= 60;
+    return 'F';
+}
+
+sub print_report {
+    my @students = @_;
+    printf("%-20s %6s %5s\n", "Name", "Score", "Grade");
+    print "-" x 35 . "\n";
+    foreach my $s (sort { $b->{score} <=> $a->{score} } @students) {
+        printf("%-20s %6d %5s\n", $s->{name}, $s->{score}, $s->{grade});
+    }
+    my $avg = 0;
+    $avg += $_->{score} foreach @students;
+    $avg /= scalar @students;
+    print "-" x 35 . "\n";
+    printf("%-20s %6.1f\n", "Class Average:", $avg);
+}
+
+my @raw_students = (
+    { name => "Alice",  score => 92 },
+    { name => "Bob",    score => 75 },
+    { name => "Carol",  score => 88 },
+    { name => "",       score => 50 },
+    { name => "David",  score => 61 },
+    { name => "Eve",    score => 105 },
+);
+
+my @valid_students;
+foreach my $s (@raw_students) {
+    if (is_valid_student($s)) {
+        $s->{grade} = compute_grade($s->{score});
+        push @valid_students, $s;
+    } else {
+        print "Skipping invalid record: " . ($s->{name} || "(no name)") . "\n";
+    }
+}
+
+print_report(@valid_students);
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+sub greet_user {
+    print "Hello! Welcome to the program.\n";
+    print "We are glad you are here.\n";
+}
+
+sub print_separator {
+    print "-" x 40 . "\n";
+}
+
+print_separator();
+greet_user();
+print_separator();
