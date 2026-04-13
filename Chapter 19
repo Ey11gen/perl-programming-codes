@@ -1,0 +1,149 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+sub parse_integer {
+    my $input = shift;
+    die "Input must be defined\n"    unless defined $input;
+    die "Input must not be empty\n"  if $input eq '';
+    die "'$input' is not an integer\n" unless $input =~ /^-?\d+$/;
+    return int($input);
+}
+
+my @test_inputs = ('42', '-7', '3.14', 'abc', '', undef, '100');
+
+foreach my $val (@test_inputs) {
+    my $result = eval { parse_integer($val) };
+    if ($@) {
+        my $err = $@;
+        chomp $err;
+        printf("Input: %-8s -> ERROR: %s\n",
+            defined($val) ? "'$val'" : 'undef',
+            $err);
+    } else {
+        printf("Input: %-8s -> Result: %d\n", "'$val'", $result);
+    }
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+package Exception;
+sub new {
+    my ($class, %args) = @_;
+    return bless {
+        type    => $args{type}    // 'GenericError',
+        message => $args{message} // 'An error occurred',
+        code    => $args{code}    // 0,
+    }, $class;
+}
+sub type    { return $_[0]->{type}    }
+sub message { return $_[0]->{message} }
+sub code    { return $_[0]->{code}    }
+sub throw   { my $class = shift; die $class->new(@_) }
+
+package NetworkException;
+our @ISA = ('Exception');
+
+package DatabaseException;
+our @ISA = ('Exception');
+
+package main;
+
+sub connect_to_service {
+    my $host = shift;
+    if ($host eq 'bad-host') {
+        NetworkException->throw(
+            type    => 'ConnectionRefused',
+            message => "Cannot connect to $host",
+            code    => 111,
+        );
+    }
+    return { host => $host, connected => 1 };
+}
+
+foreach my $host ('good-host', 'bad-host') {
+    my $conn = eval { connect_to_service($host) };
+    if (my $err = $@) {
+        if (ref($err) && $err->isa('NetworkException')) {
+            printf("Network error [%d]: %s\n", $err->code(), $err->message());
+        } elsif (ref($err) && $err->isa('DatabaseException')) {
+            printf("Database error: %s\n", $err->message());
+        } else {
+            die $err;
+        }
+    } else {
+        printf("Connected to %s successfully.\n", $conn->{host});
+    }
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+# To profile: perl -d:NYTProf profiling_example.pl
+# Then: nytprofhtml
+
+sub expensive_operation {
+    my $n = shift;
+    return $n * $n + sqrt($n);
+}
+
+sub slow_implementation {
+    my @data = @_;
+    my @result;
+    foreach my $item (@data) {
+        my $processed = expensive_operation($item);
+        push @result, $processed if $processed > 10;
+    }
+    return @result;
+}
+
+sub fast_implementation {
+    return grep { $_ > 10 } map { expensive_operation($_) } @_;
+}
+
+my @large_dataset = (1..1000);
+
+my @slow_result = slow_implementation(@large_dataset);
+my @fast_result = fast_implementation(@large_dataset);
+
+printf("Slow: %d results, Fast: %d results\n",
+    scalar @slow_result, scalar @fast_result);
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+use Test::More;
+use lib '..';
+use TextTools qw(word_count char_count title_case truncate_text clean_whitespace);
+
+subtest 'word_count' => sub {
+    is(word_count("hello world"),    2, 'two words');
+    is(word_count("one two three"),  3, 'three words');
+    is(word_count("single"),         1, 'single word');
+    is(word_count("  spaced  out  "),2, 'extra spaces');
+    is(word_count(""),               0, 'empty string');
+};
+
+subtest 'title_case' => sub {
+    is(title_case("hello world"),        "Hello World",  'basic title case');
+    is(title_case("THE BIG STORM"),      "The Big Storm",'uppercase input');
+    is(title_case("perl programming"),   "Perl Programming", 'lowercase input');
+};
+
+subtest 'truncate_text' => sub {
+    is(truncate_text("Hello World", 20),       "Hello World",    'no truncation needed');
+    is(truncate_text("Hello World", 8),        "Hello...",       'truncated with ...');
+    is(truncate_text("Hello World", 8, '!'),   "Hello W!",       'custom suffix');
+    is(truncate_text("", 5),                   "",               'empty string');
+};
+
+subtest 'clean_whitespace' => sub {
+    is(clean_whitespace("  hello  "),           "hello",          'trim leading/trailing');
+    is(clean_whitespace("hello   world"),        "hello world",    'collapse internal');
+    is(clean_whitespace("  lots   of   spaces  "),"lots of spaces", 'full clean');
+};
+
+done_testing();
