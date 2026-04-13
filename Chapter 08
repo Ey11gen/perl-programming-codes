@@ -1,0 +1,161 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $config_text = <<'END';
+# Database configuration
+host     = db.example.com
+port     = 5432
+database = myapp_production
+
+# Application settings
+debug    = 0
+timeout  = 30
+log_file = /var/log/myapp.log
+END
+
+my %config;
+foreach my $line (split /\n/, $config_text) {
+    next if $line =~ /^\s*#/;
+    next if $line =~ /^\s*$/;
+    if ($line =~ /^\s*([\w_]+)\s*=\s*(.+?)\s*$/) {
+        $config{$1} = $2;
+    }
+}
+
+foreach my $key (sort keys %config) {
+    printf("%-12s = %s\n", $key, $config{$key});
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $html = "<b>Bold text</b> and <i>italic text</i>";
+
+if ($html =~ /<(.+)>/) {
+    print "Greedy match: [" . $1 . "]\n";
+}
+
+if ($html =~ /<(.+?)>/) {
+    print "Non-greedy match: [" . $1 . "]\n";
+}
+
+my $html2   = "<div><p>Hello <b>World</b></p><p>Second <i>paragraph</i></p></div>";
+my @all_tags = ($html2 =~ /<\/?([a-z]+)>/g);
+print "All tags: " . join(", ", @all_tags) . "\n";
+
+my %seen;
+my @unique_tags;
+push @unique_tags, $_ unless $seen{$_}++ foreach @all_tags;
+print "Unique tags: " . join(", ", @unique_tags) . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my @words = ("color", "colour", "color_code", "colorful", "discolor");
+
+print "Words where color is NOT followed by _ or ful:\n";
+foreach my $word (@words) {
+    if ($word =~ /colou?r(?!_|ful)/) {
+        print "  " . $word . "\n";
+    }
+}
+
+my $text = "Price: 100 USD, Cost: 250 EUR, Fee: 75 USD";
+my @usd_amounts;
+while ($text =~ /(\d+)(?= USD)/g) {
+    push @usd_amounts, $1;
+}
+print "USD amounts: " . join(", ", @usd_amounts) . "\n";
+
+my $text2     = "cat:Tom, dog:Rex, cat:Whiskers, bird:Tweety, cat:Felix";
+my @cat_names;
+while ($text2 =~ /(?<=cat:)(\w+)/g) {
+    push @cat_names, $1;
+}
+print "Cat names: " . join(", ", @cat_names) . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my @log_lines = (
+    "2026-03-15 14:23:07 ERROR   Connection refused at server-01",
+    "2026-03-15 14:23:09 WARNING Disk usage at 87 percent on /var",
+    "2026-03-15 14:24:01 INFO    Service restarted successfully",
+);
+
+foreach my $line (@log_lines) {
+    if ($line =~ /
+        (?<date>\d{4}-\d{2}-\d{2})
+        \s+
+        (?<time>\d{2}:\d{2}:\d{2})
+        \s+
+        (?<level>\w+)
+        \s+
+        (?<message>.+)
+    /x) {
+        printf("[%s] [%s] %s: %s\n",
+               $+{date}, $+{time}, $+{level}, $+{message});
+    }
+}
+
+my $integer_re = qr/^-?\d+$/;
+my $decimal_re = qr/^-?\d+\.\d+$/;
+my $date_re    = qr/^\d{4}-\d{2}-\d{2}$/;
+
+my @inputs = ("42", "-7", "3.14", "2026-03-15", "hello", "12.3.4");
+
+foreach my $input (@inputs) {
+    if    ($input =~ $integer_re)  { print $input . " is an integer\n";  }
+    elsif ($input =~ $decimal_re)  { print $input . " is a decimal\n";   }
+    elsif ($input =~ $date_re)     { print $input . " is a date\n";      }
+    else                           { print $input . " is unrecognized\n"; }
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $text = "I have 3 cats and 12 dogs and 1 parrot.";
+
+(my $words = $text) =~ s/(\d+)/
+    my @nums = qw(zero one two three four five six seven eight nine ten eleven twelve);
+    $1 <= 12 ? $nums[$1] : $1
+/ge;
+print $words . "\n";
+
+my $title = "the quick brown fox jumps over the lazy dog";
+(my $titled = $title) =~ s/(\b\w)/uc($1)/ge;
+print $titled . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $text = "Hello, World! This is a Test.";
+
+(my $lower = $text) =~ tr/A-Z/a-z/;
+print "Lowercase: " . $lower . "\n";
+
+(my $upper = $text) =~ tr/a-z/A-Z/;
+print "Uppercase: " . $upper . "\n";
+
+(my $rot13 = $text) =~ tr/A-Za-z/N-ZA-Mn-za-m/;
+print "ROT13:     " . $rot13 . "\n";
+
+my $count = ($text =~ tr/aeiouAEIOU//);
+print "Vowel count: " . $count . "\n";
+
+my $messy = "Hello!!!   World???...";
+(my $no_punct  = $messy) =~ tr/!?.//d;
+print "No punctuation: [" . $no_punct . "]\n";
+
+(my $squeezed = $messy) =~ tr/ //s;
+print "Squeezed spaces: [" . $squeezed . "]\n";
+
+my $digits = "a1b2c3d4e5";
+(my $digits_only = $digits) =~ tr/0-9//dc;
+print "Digits only: [" . $digits_only . "]\n";
