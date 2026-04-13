@@ -1,0 +1,236 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use File::Basename;
+
+sub bulk_rename {
+    my ($dir, $transform, $dry_run) = @_;
+    $dry_run //= 0;
+
+    opendir(my $dh, $dir) or die "Cannot open $dir: $!\n";
+    my @files = sort grep { -f "$dir/$_" } readdir($dh);
+    closedir($dh);
+
+    my ($renamed, $skipped) = (0, 0);
+
+    foreach my $old_name (@files) {
+        my $new_name = $transform->($old_name);
+
+        if ($new_name eq $old_name) {
+            $skipped++;
+            next;
+        }
+
+        my $old_path = "$dir/$old_name";
+        my $new_path = "$dir/$new_name";
+
+        if (-e $new_path) {
+            warn "Skipping: $new_name already exists\n";
+            $skipped++;
+            next;
+        }
+
+        if ($dry_run) {
+            printf("  [DRY RUN] %s -> %s\n", $old_name, $new_name);
+        } else {
+            if (rename($old_path, $new_path)) {
+                printf("  Renamed: %s -> %s\n", $old_name, $new_name);
+                $renamed++;
+            } else {
+                warn "Failed to rename $old_name: $!\n";
+                $skipped++;
+            }
+        }
+    }
+
+    printf("Done. Renamed: %d, Skipped: %d\n", $renamed, $skipped);
+}
+
+# Example: preview renaming files in current directory to lowercase
+bulk_rename('.',
+    sub {
+        my $name = shift;
+        $name =~ s/\s+/_/g;
+        return lc($name);
+    },
+    1  # dry_run = 1 for preview
+);
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+use File::Find;
+use File::Basename;
+
+my @search_roots = ('.');
+my (%extension_count, @large_files);
+my $size_threshold = 100_000;
+my $now            = time();
+
+sub analyze_file {
+    my $path = $File::Find::name;
+    return unless -f $path;
+
+    my $size = -s $path;
+    my $ext  = lc((fileparse($path, qr/\.[^.]+$/))[2]);
+    $ext ||= '(no extension)';
+
+    $extension_count{$ext}++;
+
+    if ($size >= $size_threshold) {
+        push @large_files, { path => $path, size => $size };
+    }
+}
+
+find(\&analyze_file, @search_roots);
+
+print "=== FILE SYSTEM ANALYSIS ===\n\n";
+print "File extensions found:\n";
+foreach my $ext (sort { $extension_count{$b} <=> $extension_count{$a} }
+                      keys %extension_count) {
+    printf("  %-20s %d files\n", $ext, $extension_count{$ext});
+}
+
+if (@large_files) {
+    printf("\nFiles over %d KB:\n", $size_threshold / 1024);
+    foreach my $f (sort { $b->{size} <=> $a->{size} } @large_files) {
+        printf("  %-50s %.1f KB\n", $f->{path}, $f->{size} / 1024);
+    }
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+use POSIX qw(strftime);
+
+sub file_metadata {
+    my $path = shift;
+    return undef unless -e $path;
+
+    my @stat = stat($path);
+    return {
+        path     => $path,
+        size     => $stat[7],
+        atime    => $stat[8],
+        mtime    => $stat[9],
+        ctime    => $stat[10],
+        mode     => $stat[2],
+        is_file  => -f $path ? 1 : 0,
+        is_dir   => -d $path ? 1 : 0,
+        readable => -r $path ? 1 : 0,
+        writable => -w $path ? 1 : 0,
+    };
+}
+
+my $meta = file_metadata('/etc/hosts');
+if ($meta) {
+    printf("Path:     %s\n", $meta->{path});
+    printf("Size:     %d bytes\n", $meta->{size});
+    printf("Modified: %s\n", strftime('%Y-%m-%d %H:%M:%S', localtime($meta->{mtime})));
+    printf("Mode:     %04o\n", $meta->{mode} & 07777);
+    printf("Type:     %s\n", $meta->{is_file} ? 'regular file' : $meta->{is_dir} ? 'directory' : 'other');
+    printf("Access:   %s%s\n",
+           $meta->{readable} ? 'readable ' : '',
+           $meta->{writable} ? 'writable' : 'read-only');
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+use File::Copy;
+use File::Path qw(make_path);
+use File::Basename;
+use POSIX qw(strftime);
+
+my %CONFIG = (
+    watch_dir  => '/tmp/incoming',
+    done_dir   => '/tmp/processed',
+    error_dir  => '/tmp/errors',
+    log_file   => '/tmp/processor.log',
+    poll_secs  => 5,
+);
+
+sub log_event {
+    my ($level, $msg) = @_;
+    my $ts   = strftime('[%Y-%m-%d %H:%M:%S]', localtime);
+    my $line = "$ts [$level] $msg\n";
+    print $line;
+    open(my $lf, '>>', $CONFIG{log_file}) and do { print $lf $line; close $lf };
+}
+
+sub process_csv_file {
+    my $path = shift;
+    open(my $fh, '<', $path) or die "Cannot read $path: $!\n";
+    my @lines = <$fh>;
+    close($fh);
+    chomp @lines;
+    my $header = shift @lines;
+    return { ok => 1, rows => scalar @lines, header => $header };
+}
+
+sub route_file {
+    my ($path, $success) = @_;
+    my $dest_dir = $success ? $CONFIG{done_dir} : $CONFIG{error_dir};
+    make_path($dest_dir) unless -d $dest_dir;
+    my $dest = $dest_dir . '/' . basename($path);
+    move($path, $dest) or log_event('ERROR', "Cannot move $path: $!");
+}
+
+make_path($CONFIG{watch_dir}, $CONFIG{done_dir}, $CONFIG{error_dir});
+log_event('INFO', 'File processor started (poll mode - run with sample files)');
+
+# Process any existing files once
+opendir(my $dh, $CONFIG{watch_dir}) or die "Cannot open watch dir: $!\n";
+my @files = sort grep { -f "$CONFIG{watch_dir}/$_" } readdir($dh);
+closedir($dh);
+
+foreach my $fname (@files) {
+    my $full = $CONFIG{watch_dir} . '/' . $fname;
+    log_event('INFO', "Processing: $fname");
+
+    my $result = eval { process_csv_file($full) };
+    if ($@ || !$result->{ok}) {
+        log_event('ERROR', "Failed $fname: " . ($@ || 'Processing failed'));
+        route_file($full, 0);
+    } else {
+        log_event('INFO', sprintf('OK: %s (%d rows)', $fname, $result->{rows}));
+        route_file($full, 1);
+    }
+}
+
+log_event('INFO', 'File processor complete');
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+use File::Copy;
+use File::Path qw(make_path);
+use File::Basename;
+use File::Spec;
+
+sub safe_copy {
+    my ($src, $dst_dir) = @_;
+    unless (-f $src) {
+        warn "Source not found: $src\n";
+        return 0;
+    }
+    unless (-d $dst_dir) {
+        make_path($dst_dir) or do {
+            warn "Cannot create directory $dst_dir: $!\n";
+            return 0;
+        };
+    }
+    my $dst = File::Spec->catfile($dst_dir, basename($src));
+    if (-e $dst) {
+        $dst = $dst_dir . '/' . time() . '_' . basename($src);
+    }
+    copy($src, $dst) or do {
+        warn "Copy failed $src -> $dst: $!\n";
+        return 0;
+    };
+    printf("Copied: %s -> %s\n", $src, $dst);
+    return 1;
+}
+
+# Example: copy this script to /tmp
+safe_copy($0, '/tmp/perl_book_backup');
