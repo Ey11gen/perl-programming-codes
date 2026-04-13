@@ -1,0 +1,132 @@
+# Project dependencies
+requires 'Moo',           '2.0';
+requires 'Text::CSV',     '2.0';
+requires 'LWP::UserAgent','6.0';
+requires 'JSON::PP';
+requires 'Mojo::DOM';
+
+on 'test' => sub {
+    requires 'Test::More', '0.98';
+};
+
+on 'develop' => sub {
+    requires 'Perl::Critic';
+    requires 'Perl::Tidy';
+};
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+# Install: cpanm Text::CSV
+use Text::CSV;
+
+my $csv = Text::CSV->new({ binary => 1, auto_diag => 1 });
+
+# Write a sample CSV file first
+open(my $wfh, '>:encoding(UTF-8)', 'sample.csv') or die $!;
+$csv->print($wfh, ['name', 'department', 'salary']);
+$csv->print($wfh, ['Alice Smith', 'Engineering', 72000]);
+$csv->print($wfh, ['Bob, Jr.',    'Marketing',   65000]);
+$csv->print($wfh, ['Carol',       'HR',          58000]);
+close($wfh);
+
+# Read it back
+open(my $fh, '<:encoding(UTF-8)', 'sample.csv') or die $!;
+
+my $header = $csv->getline($fh);
+
+my @records;
+while (my $row = $csv->getline($fh)) {
+    my %record;
+    @record{@{$header}} = @{$row};
+    push @records, \%record;
+}
+close($fh);
+
+printf("Loaded %d records.\n", scalar @records);
+foreach my $rec (@records) {
+    printf("  %-20s %s\n", $rec->{name} // "(no name)",
+                             $rec->{department} // "(no dept)");
+}
+
+package TextTools;
+
+use strict;
+use warnings;
+use Exporter 'import';
+
+our @EXPORT_OK = qw(word_count char_count title_case truncate_text clean_whitespace);
+
+sub word_count {
+    my $text = shift;
+    my @words = split(' ', $text);
+    return scalar @words;
+}
+
+sub char_count {
+    my ($text, $include_spaces) = @_;
+    return $include_spaces ? length($text)
+         : do { (my $t = $text) =~ s/\s//g; length($t) };
+}
+
+sub title_case {
+    my $text = lc(shift);
+    $text =~ s/(\b\w)/uc($1)/ge;
+    return $text;
+}
+
+sub truncate_text {
+    my ($text, $max_len, $suffix) = @_;
+    $suffix //= '...';
+    return $text if length($text) <= $max_len;
+    return substr($text, 0, $max_len - length($suffix)) . $suffix;
+}
+
+sub clean_whitespace {
+    my $text = shift;
+    $text =~ s/^\s+|\s+$//g;
+    $text =~ s/\s+/ /g;
+    return $text;
+}
+
+1;
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+use lib '.';
+use TextTools qw(word_count title_case truncate_text clean_whitespace);
+
+my $text = "  the quick brown fox   jumps over the lazy dog  ";
+
+my $clean = clean_whitespace($text);
+print "Clean:    " . $clean              . "\n";
+print "Words:    " . word_count($clean)  . "\n";
+print "Title:    " . title_case($clean)  . "\n";
+print "Short:    " . truncate_text($clean, 20) . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+use POSIX qw(floor ceil);
+use List::Util qw(sum min max first reduce);
+use Scalar::Util qw(looks_like_number blessed);
+
+my @numbers = (3.7, 1.2, 8.9, 4.5, 6.1, 2.8);
+
+printf("Sum:   %.1f\n", sum(@numbers));
+printf("Min:   %.1f\n", min(@numbers));
+printf("Max:   %.1f\n", max(@numbers));
+printf("Floor of 3.7: %d\n", floor(3.7));
+printf("Ceil  of 3.2: %d\n", ceil(3.2));
+
+my $first_big = first { $_ > 5 } @numbers;
+print "First number above 5: " . $first_big . "\n";
+
+my $product = reduce { $a * $b } @numbers;
+printf("Product of all: %.4f\n", $product);
+
+print "Is 42 a number?    " . (looks_like_number(42)      ? "yes" : "no") . "\n";
+print "Is hello a number? " . (looks_like_number("hello") ? "yes" : "no") . "\n";
