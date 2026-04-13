@@ -1,0 +1,187 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+# Install: cpanm Dancer2
+# Run with: perl dancer2_api.pl
+# Test: curl http://localhost:3000/books
+# Test: curl -X POST -H "Content-Type: application/json" \$
+#            -d '{"title":"Perl Cookbook","author":"Tom Christiansen"}' \$
+#            http://localhost:3000/books
+
+use Dancer2;
+use JSON::PP qw(encode_json decode_json);
+
+my %books = (
+    1 => { id => 1, title => 'Programming Perl',  author => 'Larry Wall',      year => 2000 },
+    2 => { id => 2, title => 'Learning Perl',     author => 'Randal Schwartz', year => 2011 },
+    3 => { id => 3, title => 'Modern Perl',       author => 'chromatic',       year => 2016 },
+);
+my $next_id = 4;
+
+get '/books' => sub {
+    content_type 'application/json';
+    return encode_json([values %books]);
+};
+
+get '/books/:id' => sub {
+    my $id = route_parameters->get('id');
+    if (exists $books{$id}) {
+        content_type 'application/json';
+        return encode_json($books{$id});
+    } else {
+        status 404;
+        content_type 'application/json';
+        return encode_json({ error => "Book $id not found" });
+    }
+};
+
+post '/books' => sub {
+    my $body = decode_json(request->body());
+    unless ($body->{title} && $body->{author}) {
+        status 400;
+        content_type 'application/json';
+        return encode_json({ error => 'title and author are required' });
+    }
+    my $id = $next_id++;
+    $books{$id} = { id => $id, %{$body} };
+    status 201;
+    content_type 'application/json';
+    return encode_json($books{$id});
+};
+
+del '/books/:id' => sub {
+    my $id = route_parameters->get('id');
+    if (exists $books{$id}) {
+        delete $books{$id};
+        status 204;
+        return '';
+    } else {
+        status 404;
+        content_type 'application/json';
+        return encode_json({ error => 'Book not found' });
+    }
+};
+
+dance;
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+use HTTP::Tiny;
+
+my $http = HTTP::Tiny->new(
+    timeout    => 30,
+    verify_SSL => 1,
+);
+
+my $response = $http->get('https://jsonplaceholder.typicode.com/posts/1');
+
+if ($response->{success}) {
+    printf("Status:       %d %s\n", $response->{status}, $response->{reason});
+    printf("Content-Type: %s\n",    $response->{headers}{'content-type'});
+    printf("Body length:  %d bytes\n", length($response->{content}));
+    print "\nBody:\n" . $response->{content} . "\n";
+} else {
+    printf("Request failed: %d %s\n", $response->{status}, $response->{reason});
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+use HTTP::Tiny;
+use JSON::PP qw(encode_json decode_json);
+
+my $http = HTTP::Tiny->new(timeout => 30);
+
+my $new_post = {
+    title  => 'My First Post',
+    body   => 'This is the post content.',
+    userId => 1,
+};
+
+my $response = $http->request('POST',
+    'https://jsonplaceholder.typicode.com/posts',
+    {
+        content => encode_json($new_post),
+        headers => { 'Content-Type' => 'application/json' },
+    }
+);
+
+if ($response->{success}) {
+    my $created = decode_json($response->{content});
+    printf("Created post with ID: %d\n", $created->{id});
+    printf("Title: %s\n", $created->{title});
+} else {
+    print "POST failed: $response->{status} $response->{reason}\n";
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+use HTTP::Tiny;
+use Mojo::DOM;
+
+# Install: cpanm Mojolicious
+
+my $http = HTTP::Tiny->new(timeout => 30);
+my $res  = $http->get('https://example.com');
+
+unless ($res->{success}) {
+    die "Failed to fetch page: $res->{status} $res->{reason}\n";
+}
+
+my $dom = Mojo::DOM->new($res->{content});
+
+my $title = $dom->at('title');
+printf("Page title: %s\n", $title ? $title->text() : 'Not found');
+
+print "\nAll headings:\n";
+$dom->find('h1, h2, h3')->each(sub {
+    my $el = shift;
+    printf("  <%s>: %s\n", $el->tag(), $el->text());
+});
+
+print "\nAll links:\n";
+$dom->find('a[href]')->each(sub {
+    my $el = shift;
+    printf("  %-50s %s\n",
+        $el->text() || '(no text)',
+        $el->attr('href'));
+});
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+use IO::Socket::INET;
+
+sub check_tcp_port {
+    my ($host, $port, $timeout) = @_;
+    $timeout //= 5;
+    my $socket = IO::Socket::INET->new(
+        PeerHost => $host,
+        PeerPort => $port,
+        Proto    => 'tcp',
+        Timeout  => $timeout,
+    );
+    if ($socket) {
+        $socket->close();
+        return 1;
+    }
+    return 0;
+}
+
+my @services = (
+    { name => 'Google HTTP',  host => 'google.com', port => 80  },
+    { name => 'Google HTTPS', host => 'google.com', port => 443 },
+    { name => 'Local SSH',    host => 'localhost',  port => 22  },
+);
+
+printf("%-20s %-20s %-6s %s\n", 'Service', 'Host', 'Port', 'Status');
+print "-" x 55 . "\n";
+foreach my $svc (@services) {
+    my $up = check_tcp_port($svc->{host}, $svc->{port}, 3);
+    printf("%-20s %-20s %-6d %s\n",
+        $svc->{name}, $svc->{host}, $svc->{port},
+        $up ? 'UP' : 'DOWN');
+}
