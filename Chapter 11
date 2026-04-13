@@ -1,0 +1,162 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $square = sub {
+    my $n = shift;
+    return $n * $n;
+};
+
+my $cube = sub {
+    my $n = shift;
+    return $n * $n * $n;
+};
+
+my $greet = sub {
+    my $name = shift;
+    return "Hello, " . $name . "!";
+};
+
+printf("Square of 7:  %d\n", $square->(7));
+printf("Cube of 5:    %d\n", $cube->(5));
+print $greet->("Maria") . "\n";
+
+my %operations = (
+    add => sub { my ($a,$b) = @_; return $a + $b },
+    sub => sub { my ($a,$b) = @_; return $a - $b },
+    mul => sub { my ($a,$b) = @_; return $a * $b },
+    div => sub { my ($a,$b) = @_; return $b != 0 ? $a / $b : 'undefined' },
+    pow => sub { my ($a,$b) = @_; return $a ** $b },
+);
+
+my @requests = (
+    ['add', 10, 5],
+    ['mul', 6,  7],
+    ['div', 15, 4],
+    ['div', 9,  0],
+    ['pow', 2,  8],
+);
+
+foreach my $req (@requests) {
+    my ($op, $a, $b) = @{$req};
+    if (exists $operations{$op}) {
+        printf("%-4s(%d, %d) = %s\n", $op, $a, $b, $operations{$op}->($a, $b));
+    } else {
+        print "Unknown operation: " . $op . "\n";
+    }
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my @employees = (
+    { id => 'E001', name => 'Alice Moreno', dept => 'Engineering', salary => 72000 },
+    { id => 'E002', name => 'Bob Chen',     dept => 'Marketing',   salary => 65000 },
+    { id => 'E003', name => 'Carol Singh',  dept => 'Engineering', salary => 78000 },
+    { id => 'E004', name => 'David Park',   dept => 'HR',          salary => 58000 },
+    { id => 'E005', name => 'Elena Torres', dept => 'Engineering', salary => 81000 },
+);
+
+printf("%-6s %-20s %-14s %s\n", "ID", "Name", "Department", "Salary");
+print "-" x 55 . "\n";
+foreach my $emp (@employees) {
+    printf("%-6s %-20s %-14s %d\n",
+           $emp->{id}, $emp->{name}, $emp->{dept}, $emp->{salary});
+}
+
+my $total_salary = 0;
+$total_salary += $_->{salary} foreach @employees;
+printf("\nAverage salary: %.2f\n", $total_salary / scalar @employees);
+
+my @engineers = grep { $_->{dept} eq 'Engineering' } @employees;
+printf("Engineering count: %d\n", scalar @engineers);
+
+my %courses_by_dept = (
+    Engineering => ['Algorithms', 'Systems Design', 'Database Internals'],
+    Marketing   => ['Brand Strategy', 'Digital Advertising', 'Market Research'],
+    HR          => ['Talent Acquisition', 'Employment Law'],
+);
+
+foreach my $dept (sort keys %courses_by_dept) {
+    print $dept . ":\n";
+    foreach my $course (@{ $courses_by_dept{$dept} }) {
+        print "  - " . $course . "\n";
+    }
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+use Data::Dumper;
+
+my @company = (
+    {
+        name   => 'Alice',
+        skills => ['Perl', 'Python', 'SQL'],
+        address => { city => 'Madrid', country => 'Spain' },
+    },
+    {
+        name   => 'Bob',
+        skills => ['JavaScript', 'HTML', 'CSS'],
+        address => { city => 'London', country => 'UK' },
+    },
+);
+
+print Dumper(\@company);
+
+print "City of first employee: " . $company[0]{address}{city} . "\n";
+print "Second skill of Bob:    " . $company[1]{skills}[1]     . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my @original = ("apple", "banana", "cherry");
+my $ref = \@original;
+
+print "Arrow syntax:  " . $ref->[1]   . "\n";
+print "Block syntax:  " . ${$ref}[1]  . "\n";
+
+my @copy = @{$ref};
+print "Full copy: " . join(", ", @copy) . "\n";
+
+push @{$ref}, "date";
+print "After push: " . join(", ", @original) . "\n";
+
+my %config = (host => "localhost", port => 3306, db => "myapp");
+my $cfg = \%config;
+
+print "Host via arrow:  " . $cfg->{host}  . "\n";
+print "Port via block:  " . ${$cfg}{port} . "\n";
+
+my %copy_hash = %{$cfg};
+print "Copy keys: " . join(", ", sort keys %copy_hash) . "\n";
+
+$cfg->{timeout} = 30;
+print "Original now has timeout: " . $config{timeout} . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my @colors  = ("red", "green", "blue");
+my %person  = (name => "Alice", age => 30);
+my $count   = 42;
+
+my $array_ref  = \@colors;
+my $hash_ref   = \%person;
+my $scalar_ref = \$count;
+
+print "Array ref:  " . ref($array_ref)  . "\n";
+print "Hash ref:   " . ref($hash_ref)   . "\n";
+print "Scalar ref: " . ref($scalar_ref) . "\n";
+
+my $anon_array = [1, 2, 3, 4, 5];
+my $anon_hash  = { name => "Bob", score => 95 };
+
+print "Type of anon_array: " . ref($anon_array) . "\n";
+print "Type of anon_hash:  " . ref($anon_hash)  . "\n";
+
+print "First element: " . $anon_array->[0] . "\n";
+print "Name field:    " . $anon_hash->{name} . "\n";
