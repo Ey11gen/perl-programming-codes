@@ -1,0 +1,197 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use DBI;
+
+# Install: cpanm DBI DBD::SQLite
+
+my $dsn = 'dbi:SQLite:dbname=company.db';
+my $dbh = DBI->connect($dsn, '', '', {
+    RaiseError     => 1,
+    AutoCommit     => 1,
+    PrintError     => 0,
+    sqlite_unicode => 1,
+}) or die DBI->errstr;
+
+print "Connected to database successfully.\n";
+
+$dbh->do(<<'END_SQL');
+    CREATE TABLE IF NOT EXISTS employees (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        name       TEXT    NOT NULL,
+        department TEXT    NOT NULL,
+        salary     REAL    NOT NULL DEFAULT 0,
+        hire_date  TEXT,
+        active     INTEGER NOT NULL DEFAULT 1
+    )
+END_SQL
+
+print "Table created (or already exists).\n";
+
+$dbh->disconnect();
+print "Disconnected.\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+use DBI;
+
+my $dbh = DBI->connect('dbi:SQLite:dbname=company.db', '', '',
+    { RaiseError => 1, AutoCommit => 1, PrintError => 0 });
+
+my $insert_sql = <<'END_SQL';
+    INSERT INTO employees (name, department, salary, hire_date, active)
+    VALUES (?, ?, ?, ?, ?)
+END_SQL
+
+my $sth = $dbh->prepare($insert_sql);
+
+my @employees = (
+    ['Alice Moreno',  'Engineering', 72000, '2021-03-15', 1],
+    ['Bob Chen',      'Marketing',   65000, '2019-07-22', 1],
+    ['Carol Singh',   'Engineering', 78000, '2020-01-10', 1],
+    ['David Park',    'HR',          58000, '2022-06-01', 1],
+    ['Elena Torres',  'Engineering', 81000, '2018-11-05', 1],
+);
+
+foreach my $emp (@employees) {
+    $sth->execute(@{$emp});
+}
+
+printf("Inserted %d employee records.\n", scalar @employees);
+
+my $update_sth = $dbh->prepare(
+    'UPDATE employees SET salary = salary * 1.10 WHERE department = ? AND active = 1'
+);
+my $rows_updated = $update_sth->execute('Engineering');
+printf("Gave pay raise to %d Engineering employees.\n", $rows_updated);
+
+$dbh->disconnect();
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+use DBI;
+
+my $dbh = DBI->connect('dbi:SQLite:dbname=company.db', '', '',
+    { RaiseError => 1, AutoCommit => 1, PrintError => 0 });
+
+my $sth = $dbh->prepare(<<'END_SQL');
+    SELECT id, name, department, salary, hire_date
+    FROM   employees
+    WHERE  active = 1
+    ORDER  BY department ASC, salary DESC
+END_SQL
+$sth->execute();
+
+printf("%-4s %-22s %-14s %10s  %s\n", 'ID', 'Name', 'Department', 'Salary', 'Hire Date');
+print "-" x 68 . "\n";
+
+my ($total_salary, $count) = (0, 0);
+while (my $row = $sth->fetchrow_hashref()) {
+    printf("%-4d %-22s %-14s %10.2f  %s\n",
+        $row->{id}, $row->{name}, $row->{department},
+        $row->{salary}, $row->{hire_date} // 'N/A');
+    $total_salary += $row->{salary};
+    $count++;
+}
+
+print "-" x 68 . "\n";
+printf("%-41s %10.2f  (%d employees)\n", 'Total / Count:', $total_salary, $count);
+printf("%-41s %10.2f\n", 'Average Salary:', $count > 0 ? $total_salary / $count : 0);
+
+print "\nDepartment summary:\n";
+my $summary_sth = $dbh->prepare(<<'END_SQL');
+    SELECT   department,
+             COUNT(*)    AS headcount,
+             AVG(salary) AS avg_salary,
+             MAX(salary) AS max_salary
+    FROM     employees
+    WHERE    active = 1
+    GROUP BY department
+    ORDER BY avg_salary DESC
+END_SQL
+$summary_sth->execute();
+
+my $dept_data = $summary_sth->fetchall_arrayref({});
+printf("%-15s %10s %12s %12s\n", 'Department', 'Headcount', 'Avg Salary', 'Max Salary');
+print "-" x 53 . "\n";
+foreach my $dept (@{$dept_data}) {
+    printf("%-15s %10d %12.2f %12.2f\n",
+        $dept->{department}, $dept->{headcount},
+        $dept->{avg_salary}, $dept->{max_salary});
+}
+
+$dbh->disconnect();
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+use DBI;
+
+my $dbh = DBI->connect('dbi:SQLite:dbname=bank.db', '', '',
+    { RaiseError => 1, AutoCommit => 1, PrintError => 0 });
+
+$dbh->do(<<'SQL');
+    CREATE TABLE IF NOT EXISTS accounts (
+        id      INTEGER PRIMARY KEY,
+        name    TEXT    NOT NULL,
+        balance REAL    NOT NULL DEFAULT 0
+    )
+SQL
+
+$dbh->do("INSERT OR IGNORE INTO accounts VALUES (1, 'Alice', 1000)");
+$dbh->do("INSERT OR IGNORE INTO accounts VALUES (2, 'Bob',    500)");
+
+sub transfer_funds {
+    my ($dbh, $from_id, $to_id, $amount) = @_;
+
+    die "Amount must be positive\n" unless $amount > 0;
+
+    $dbh->begin_work();
+
+    eval {
+        my $bal_sth = $dbh->prepare('SELECT balance FROM accounts WHERE id = ?');
+
+        $bal_sth->execute($from_id);
+        my ($from_bal) = $bal_sth->fetchrow_array();
+        die "Insufficient funds (balance: $from_bal, requested: $amount)\n"
+            if $from_bal < $amount;
+
+        my $debit  = $dbh->prepare('UPDATE accounts SET balance = balance - ? WHERE id = ?');
+        my $credit = $dbh->prepare('UPDATE accounts SET balance = balance + ? WHERE id = ?');
+
+        $debit->execute($amount,  $from_id);
+        $credit->execute($amount, $to_id);
+
+        $dbh->commit();
+        printf("Transferred %.2f from account %d to account %d\n",
+               $amount, $from_id, $to_id);
+    };
+
+    if ($@) {
+        $dbh->rollback();
+        print "Transfer failed: $@";
+    }
+}
+
+sub show_balances {
+    my $sth = $dbh->prepare('SELECT name, balance FROM accounts ORDER BY id');
+    $sth->execute();
+    while (my ($name, $bal) = $sth->fetchrow_array()) {
+        printf("  %-10s: %.2f\n", $name, $bal);
+    }
+}
+
+print "Before transfer:\n";
+show_balances();
+
+transfer_funds($dbh, 1, 2, 300);
+print "After transfer of 300:\n";
+show_balances();
+
+transfer_funds($dbh, 2, 1, 1000);
+print "After failed transfer attempt:\n";
+show_balances();
+
+$dbh->disconnect();
