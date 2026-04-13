@@ -1,0 +1,248 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use Text::CSV;
+
+my $csv = Text::CSV->new({
+    binary          => 1,
+    auto_diag       => 1,
+    skip_empty_rows => 1,
+});
+
+# Create sample sales data
+open(my $wfh, '>:encoding(UTF-8)', 'sales.csv') or die $!;
+$csv->print($wfh, ['region', 'product', 'revenue']);
+$csv->print($wfh, ['North', 'Widget A', 12500]);
+$csv->print($wfh, ['South', 'Widget B', 9800]);
+$csv->print($wfh, ['North', 'Widget B', 11200]);
+$csv->print($wfh, ['East',  'Widget A', 8400]);
+$csv->print($wfh, ['South', 'Widget A', 15600]);
+close($wfh);
+
+my @sales_data;
+
+open(my $fh, '<:encoding(UTF-8)', 'sales.csv') or die "Cannot open: $!\n";
+my $headers = $csv->getline($fh);
+
+while (my $row = $csv->getline($fh)) {
+    my %record;
+    @record{@{$headers}} = @{$row};
+    push @sales_data, \%record;
+}
+close($fh);
+
+my (%by_region, $total_revenue);
+
+foreach my $sale (@sales_data) {
+    my $region  = $sale->{region}  // 'Unknown';
+    my $revenue = $sale->{revenue} // 0;
+    $by_region{$region} += $revenue;
+    $total_revenue += $revenue;
+}
+
+print "\n=== REGIONAL SALES REPORT ===\n\n";
+printf("%-15s %12s %8s\n", "Region", "Revenue", "Share %");
+print "-" x 38 . "\n";
+foreach my $region (sort { $by_region{$b} <=> $by_region{$a} } keys %by_region) {
+    my $pct = $total_revenue > 0 ? ($by_region{$region} / $total_revenue) * 100 : 0;
+    printf("%-15s %12.2f %7.1f%%\n", $region, $by_region{$region}, $pct);
+}
+print "-" x 38 . "\n";
+printf("%-15s %12.2f %8s\n", "TOTAL", $total_revenue, "100.0%");
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+sub normalize_record {
+    my $rec = shift;
+    $rec->{name}   = ucfirst(lc($rec->{name}   // ''));
+    $rec->{dept}   = ucfirst(lc($rec->{dept}   // ''));
+    $rec->{salary} = 0 + ($rec->{salary} // 0);
+    $rec->{years}  = 0 + ($rec->{years}  // 0);
+    return $rec;
+}
+
+sub is_valid_record {
+    my $rec = shift;
+    return 0 unless $rec->{name} && length($rec->{name}) >= 2;
+    return 0 unless $rec->{salary} >= 20_000 && $rec->{salary} <= 500_000;
+    return 0 unless $rec->{years}  >= 0      && $rec->{years}  <= 50;
+    return 1;
+}
+
+sub compute_bonus {
+    my $rec  = shift;
+    my $rate = $rec->{years} >= 10 ? 0.15
+             : $rec->{years} >= 5  ? 0.10
+             : 0.05;
+    return int($rec->{salary} * $rate);
+}
+
+my @raw = (
+    { name => 'alice',   dept => 'ENGINEERING', salary => 72000, years => 7  },
+    { name => 'BOB',     dept => 'marketing',   salary => 65000, years => 3  },
+    { name => 'carol',   dept => 'HR',          salary => 58000, years => 12 },
+    { name => '',        dept => 'IT',          salary => 50000, years => 1  },
+    { name => 'david',   dept => 'engineering', salary => 999999,years => 2  },
+);
+
+my @normalized = map  { normalize_record($_)  } @raw;
+my @valid      = grep { is_valid_record($_)   } @normalized;
+
+printf("Read: %d, After validation: %d\n", scalar @raw, scalar @valid);
+
+printf("\n%-22s %-14s %10s %10s %10s\n",
+       "Name", "Department", "Salary", "Years", "Bonus");
+print "=" x 70 . "\n";
+foreach my $e (sort { $a->{dept} cmp $b->{dept} || $b->{salary} <=> $a->{salary} } @valid) {
+    my $bonus = compute_bonus($e);
+    printf("%-22s %-14s %10d %10d %10d\n",
+           $e->{name}, $e->{dept}, $e->{salary}, $e->{years}, $bonus);
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+use JSON::PP;
+
+my $json_string = <<'END_JSON';
+{
+    "employees": [
+        { "name": "Alice", "department": "Engineering", "salary": 72000, "active": true },
+        { "name": "Bob",   "department": "Marketing",   "salary": 65000, "active": false },
+        { "name": "Carol", "department": "Engineering", "salary": 78000, "active": true }
+    ],
+    "company": "TechCorp",
+    "year": 2026
+}
+END_JSON
+
+my $data = decode_json($json_string);
+
+printf("Company: %s, Year: %d\n", $data->{company}, $data->{year});
+print "Active employees in Engineering:\n";
+
+my @active_eng = grep {
+    $_->{department} eq 'Engineering' && $_->{active}
+} @{$data->{employees}};
+
+foreach my $emp (@active_eng) {
+    printf("  %-15s Salary: %d\n", $emp->{name}, $emp->{salary});
+}
+
+push @{$data->{employees}}, {
+    name       => 'David',
+    department => 'HR',
+    salary     => 58000,
+    active     => \1,
+};
+
+my $encoder     = JSON::PP->new->pretty->canonical;
+my $output_json = $encoder->encode($data);
+print "\nUpdated JSON:\n" . $output_json . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $log_pattern = qr/
+    ^(\S+)              # client IP address
+    \s+\S+\s+\S+\s+ # ident, auth
+    \[([^\]]+)\]      # timestamp
+    \s+"(\S+)          # HTTP method
+    \s+(\S+)           # path
+    \s+\S+"            # protocol
+    \s+(\d{3})         # status code
+    \s+(\S+)           # bytes
+/x;
+
+my (%status_count, %ip_count, %path_count);
+my ($total_lines, $total_bytes, $error_count) = (0, 0, 0);
+
+# Create a sample log file
+open(my $wfh, '>', 'access.log') or die $!;
+print $wfh '192.168.1.1 - - [15/Mar/2026:14:00:01 +0000] "GET /index.html HTTP/1.1" 200 1234' . "\n";
+print $wfh '10.0.0.1 - - [15/Mar/2026:14:00:02 +0000] "POST /api/login HTTP/1.1" 200 512' . "\n";
+print $wfh '192.168.1.1 - - [15/Mar/2026:14:00:03 +0000] "GET /missing.html HTTP/1.1" 404 256' . "\n";
+print $wfh '10.0.0.2 - - [15/Mar/2026:14:00:04 +0000] "GET /index.html HTTP/1.1" 200 1234' . "\n";
+close($wfh);
+
+open(my $fh, '<', 'access.log') or die "Cannot open log: $!\n";
+
+while (my $line = <$fh>) {
+    chomp $line;
+    $total_lines++;
+
+    if ($line =~ $log_pattern) {
+        my ($ip, $time, $method, $path, $status, $bytes) =
+           ($1, $2, $3, $4, $5, $6);
+
+        $status_count{$status}++;
+        $ip_count{$ip}++;
+        $path_count{$path}++;
+        $error_count++ if $status >= 400;
+        $total_bytes += $bytes if $bytes =~ /^\d+$/;
+    }
+}
+close($fh);
+
+printf("Total requests:  %d\n",    $total_lines);
+printf("Total errors:    %d\n",    $error_count);
+printf("Total bytes:     %d\n",    $total_bytes);
+printf("Error rate:      %.1f%%\n",
+    $total_lines > 0 ? ($error_count / $total_lines) * 100 : 0);
+
+print "\nStatus Codes:\n";
+foreach my $code (sort keys %status_count) {
+    printf("  %s: %d\n", $code, $status_count{$code});
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+use POSIX qw(strftime);
+
+sub format_currency {
+    my $amount = shift;
+    my $str    = sprintf('%.2f', abs($amount));
+    $str =~ s/(\d)(?=(\d{3})+\.)/\$1,/g;
+    return ($amount < 0 ? '-' : '') . '\$' . $str;
+}
+
+my $date     = strftime('%B %d, %Y', localtime);
+my $inv_num  = 'INV-' . strftime('%Y%m%d', localtime) . '-001';
+
+my @items = (
+    { desc => 'Web Development Services', qty => 40, price => 95.00  },
+    { desc => 'Database Optimization',    qty => 8,  price => 120.00 },
+    { desc => 'Technical Documentation',  qty => 5,  price => 75.00  },
+);
+
+my $subtotal = 0;
+$subtotal += $_->{qty} * $_->{price} foreach @items;
+my $tax   = $subtotal * 0.20;
+my $total = $subtotal + $tax;
+
+print "=" x 64 . "\n";
+print "                      INVOICE\n";
+print "=" x 64 . "\n";
+printf("Invoice Number : %s\n", $inv_num);
+printf("Date           : %s\n", $date);
+print "=" x 64 . "\n";
+printf("  %-30s %4s  %10s  %10s\n", "Description", "Qty", "Price", "Amount");
+print "-" x 64 . "\n";
+
+foreach my $item (@items) {
+    my $amount = $item->{qty} * $item->{price};
+    printf("  %-30s %4d  %10s  %10s\n",
+           $item->{desc}, $item->{qty},
+           format_currency($item->{price}),
+           format_currency($amount));
+}
+
+print "-" x 64 . "\n";
+printf("  %44s  %10s\n", "Subtotal:", format_currency($subtotal));
+printf("  %44s  %10s\n", "Tax (20%):", format_currency($tax));
+printf("  %44s  %10s\n", "TOTAL:", format_currency($total));
+print "=" x 64 . "\n";
