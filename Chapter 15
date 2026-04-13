@@ -1,0 +1,152 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+print "Home directory: " . ($ENV{HOME}     // "(not set)") . "\n";
+print "Current user:   " . ($ENV{USER}     // $ENV{USERNAME} // "(unknown)") . "\n";
+print "Perl version:   " . ($ENV{PERL5LIB} // "(not set)") . "\n";
+
+$ENV{MY_APP_MODE}   = "development";
+$ENV{MY_APP_DBHOST} = "localhost";
+
+my $mode    = $ENV{MY_APP_MODE}   // 'development';
+my $db_host = $ENV{MY_APP_DBHOST} // 'localhost';
+
+print "Running in mode: " . $mode    . "\n";
+print "Database host:   " . $db_host . "\n";
+
+# Command-line argument handling
+if (@ARGV) {
+    print "Arguments received: " . scalar(@ARGV) . "\n";
+    foreach my $arg (@ARGV) {
+        print "  Arg: " . $arg . "\n";
+    }
+} else {
+    print "No arguments. Usage: $0 [arg1] [arg2] ...\n";
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+# Read from a command using a pipe
+open(my $pipe, '-|', 'perl', '-e', 'for (1..5) { print "line $_\n" }')
+    or die "Cannot run command: $!\n";
+
+my @output_lines;
+while (my $line = <$pipe>) {
+    chomp $line;
+    push @output_lines, $line;
+}
+close($pipe);
+
+printf("Got %d lines from pipe:\n", scalar @output_lines);
+print "  " . $_ . "\n" for @output_lines;
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+use POSIX qw(strftime);
+
+my $LOG_FILE = '/tmp/myapp.log';
+my $PID_FILE = '/tmp/myapp.pid';
+
+sub log_message {
+    my ($level, $msg) = @_;
+    my $timestamp = strftime('%Y-%m-%d %H:%M:%S', localtime);
+    my $line = "[$timestamp] [$level] $msg\n";
+    print STDERR $line;
+    if (open(my $lf, '>>', $LOG_FILE)) {
+        print $lf $line;
+        close($lf);
+    }
+}
+
+sub write_pidfile {
+    open(my $pf, '>', $PID_FILE) or do {
+        log_message("ERROR", "Cannot write PID file: $!");
+        return 0;
+    };
+    print $pf $$ . "\n";
+    close($pf);
+    return 1;
+}
+
+sub remove_pidfile {
+    unlink $PID_FILE if -f $PID_FILE;
+}
+
+sub cleanup {
+    remove_pidfile();
+    log_message("INFO", "Shutdown complete.");
+}
+
+$SIG{TERM} = $SIG{INT} = sub { cleanup(); exit 0; };
+
+log_message("INFO", "Starting application (PID: $$)");
+
+unless (write_pidfile()) {
+    log_message("ERROR", "Could not write PID file, aborting");
+    exit 1;
+}
+
+END { cleanup(); }
+
+log_message("INFO", "Application started successfully");
+log_message("INFO", "Doing work...");
+sleep 1;
+log_message("INFO", "Work complete. Exiting normally.");
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $running = 1;
+my $request_count = 0;
+
+$SIG{INT}  = sub {
+    print "\nSIGINT received. Shutting down gracefully.\n";
+    $running = 0;
+};
+
+$SIG{TERM} = sub {
+    print "SIGTERM received. Shutting down.\n";
+    $running = 0;
+};
+
+print "Server running (PID: $$). Press Ctrl+C to stop.\n";
+
+while ($running) {
+    $request_count++;
+    printf("Processing request %d...\n", $request_count);
+    sleep 1;
+    last if $request_count >= 5;
+}
+
+printf("Handled %d requests. Goodbye.\n", $request_count);
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+# system() - output goes to terminal
+my $status = system('echo Hello from system command');
+
+if ($status == 0) {
+    print "Command succeeded.\n";
+} else {
+    my $exit_code = $status >> 8;
+    print "Command failed with exit code: " . $exit_code . "\n";
+}
+
+# Backticks - capture output
+my $date_output = `date`;
+chomp $date_output;
+print "Current date: " . $date_output . "\n";
+
+my @dir_lines = `ls -la . 2>/dev/null || dir 2>/dev/null`;
+chomp @dir_lines;
+printf("Directory has %d entries.\n", scalar @dir_lines);
+
+# Safer list-form of system
+system("perl", "-e", "print 'Safe execution\n'");
