@@ -1,0 +1,193 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my @colors  = ("red", "green", "blue", "yellow");
+my @numbers = (10, 20, 30, 40, 50);
+my @mixed   = ("hello", 42, 3.14, "world");
+
+print "First color:    " . $colors[0]  . "\n";
+print "Third color:    " . $colors[2]  . "\n";
+print "Second number:  " . $numbers[1] . "\n";
+print "Mixed element:  " . $mixed[2]   . "\n";
+
+my @animals = ("cat", "dog", "bird", "fish", "rabbit");
+
+my $count      = scalar(@animals);
+my $last_index = $#animals;
+
+print "Number of elements: " . $count      . "\n";
+print "Last valid index:   " . $last_index . "\n";
+print "Last element:       " . $animals[$#animals] . "\n";
+print "Also last element:  " . $animals[-1]        . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my @with_dups = (3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5);
+
+my %seen;
+my @unique = grep { !$seen{$_}++ } @with_dups;
+
+print "With duplicates: " . join(", ", @with_dups) . "\n";
+print "Without dups:    " . join(", ", @unique)    . "\n";
+
+my @data = (45, 72, 38, 91, 55, 63, 29, 84, 47, 66);
+
+my $sum = 0;
+$sum += $_ foreach @data;
+
+my @sorted = sort { $a <=> $b } @data;
+my $min    = $sorted[0];
+my $max    = $sorted[-1];
+my $avg    = $sum / scalar(@data);
+
+printf("Count:   %d\n",   scalar(@data));
+printf("Sum:     %d\n",   $sum);
+printf("Min:     %d\n",   $min);
+printf("Max:     %d\n",   $max);
+printf("Average: %.2f\n", $avg);
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my @all_numbers = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+
+my @evens = grep { $_ % 2 == 0 } @all_numbers;
+my @odds  = grep { $_ % 2 != 0 } @all_numbers;
+my @big   = grep { $_ > 6 }      @all_numbers;
+
+print "Evens: " . join(", ", @evens) . "\n";
+print "Odds:  " . join(", ", @odds)  . "\n";
+print "Big:   " . join(", ", @big)   . "\n";
+
+my @files      = ("report.txt", "data.csv", "notes.txt", "image.png", "list.txt");
+my @text_files = grep { index($_, ".txt") != -1 } @files;
+print "Text files: " . join(", ", @text_files) . "\n";
+
+my @prices      = (10, 25, 8, 50, 15);
+my @names       = ("alice", "bob", "carol");
+
+my @discounted  = map { $_ * 0.9 }               @prices;
+my @formatted   = map { sprintf('\$%.2f', $_) } @prices;
+my @capitalized = map { ucfirst($_) }             @names;
+
+print "Original prices: " . join(", ", @prices)      . "\n";
+print "Discounted:      " . join(", ", @discounted)  . "\n";
+print "Formatted:       " . join(", ", @formatted)   . "\n";
+print "Capitalized:     " . join(", ", @capitalized) . "\n";
+
+# Chaining grep and map
+my @temps_c  = (-10, 0, 15, 22, 35, 42, -5);
+my @warm_f   = map  { ($_ * 9 / 5) + 32 }
+               grep { $_ >= 20 }
+               @temps_c;
+print "Warm temps in Fahrenheit: " . join(", ", @warm_f) . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my @stack = ("first", "second");
+
+push(@stack, "third");
+push(@stack, "fourth", "fifth");
+
+print "After pushes: " . join(", ", @stack) . "\n";
+
+my $popped = pop(@stack);
+print "Popped value: " . $popped            . "\n";
+print "After pop:    " . join(", ", @stack) . "\n";
+
+my @queue = ("second", "third");
+
+unshift(@queue, "first");
+print "After unshift: " . join(", ", @queue) . "\n";
+
+my $served = shift(@queue);
+print "Shifted value: " . $served             . "\n";
+print "After shift:   " . join(", ", @queue)  . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my @week = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun");
+
+my @weekend    = @week[5, 6];
+my @midweek    = @week[1, 2, 3];
+my @first_last = @week[0, -1];
+
+print "Weekend:    " . join(", ", @weekend)    . "\n";
+print "Midweek:    " . join(", ", @midweek)    . "\n";
+print "First-Last: " . join(", ", @first_last) . "\n";
+
+my @scores = (60, 70, 80, 90, 100);
+@scores[1, 3] = (75, 95);
+print "Updated scores: " . join(", ", @scores) . "\n";
+
+my @one_to_ten  = (1..10);
+my @letters_az  = ('a'..'z');
+my @even_range  = map { $_ * 2 } (1..10);
+
+print "1 to 10:   " . join(", ", @one_to_ten) . "\n";
+print "a to z:    " . join("", @letters_az)   . "\n";
+print "Even 2-20: " . join(", ", @even_range) . "\n";
+
+my ($first, $second, $third) = (10, 20, 30);
+print "First: $first, Second: $second, Third: $third\n";
+
+my ($head, @tail) = (1, 2, 3, 4, 5);
+print "Head: " . $head . "\n";
+print "Tail: " . join(", ", @tail) . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my @names   = ("Carlos", "Alice", "Bob", "Diana", "Eve");
+my @numbers = (42, 7, 100, 3, 55, 21);
+
+my @sorted_names   = sort @names;
+my @sorted_numbers_str = sort @numbers;
+
+print "Sorted names:       " . join(", ", @sorted_names)       . "\n";
+print "Sorted as strings:  " . join(", ", @sorted_numbers_str) . "\n";
+
+my @sorted_asc  = sort { $a <=> $b } @numbers;
+my @sorted_desc = sort { $b <=> $a } @numbers;
+
+print "Ascending:  " . join(", ", @sorted_asc)  . "\n";
+print "Descending: " . join(", ", @sorted_desc) . "\n";
+
+my @words = ("Banana", "apple", "Cherry", "date", "Elderberry");
+
+my @case_sensitive   = sort @words;
+my @case_insensitive = sort { lc($a) cmp lc($b) } @words;
+
+print "Case sensitive:   " . join(", ", @case_sensitive)   . "\n";
+print "Case insensitive: " . join(", ", @case_insensitive) . "\n";
+
+my @letters  = ("a", "b", "c", "d", "e");
+my @reversed = reverse @letters;
+print "Reversed: " . join(", ", @reversed) . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my @letters = ("a", "b", "c", "d", "e", "f");
+
+my @removed = splice(@letters, 2, 2);
+print "Removed:     " . join(", ", @removed) . "\n";
+print "Remaining:   " . join(", ", @letters) . "\n";
+
+my @nums = (1, 2, 5, 6);
+splice(@nums, 2, 0, 3, 4);
+print "After insert: " . join(", ", @nums)  . "\n";
+
+my @colors = ("red", "green", "yellow", "blue");
+splice(@colors, 2, 1, "orange", "purple");
+print "After replace: " . join(", ", @colors) . "\n";
