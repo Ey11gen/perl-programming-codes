@@ -1,0 +1,196 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $mixed = "pErL pRoGrAmMiNg";
+
+print "Uppercase:  " . uc($mixed)            . "\n";
+print "Lowercase:  " . lc($mixed)            . "\n";
+print "UC first:   " . ucfirst(lc($mixed))   . "\n";
+
+my $title_word = "hello";
+print "Title case: " . ucfirst($title_word)  . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $line = "data value\n";
+
+print "Before chomp: [" . $line . "]\n";
+chomp($line);
+print "After chomp:  [" . $line . "]\n";
+
+my $no_newline = "clean string";
+chomp($no_newline);
+print "Chomped no-newline: [" . $no_newline . "]\n";
+
+# reverse and palindrome check
+my $word   = "Perl";
+my $phrase = "racecar";
+
+my $reversed = reverse($word);
+print "Original:   " . $word    . "\n";
+print "Reversed:   " . $reversed . "\n";
+
+if ($phrase eq reverse($phrase)) {
+    print $phrase . " is a palindrome!\n";
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $language = "Perl";
+my $version  = 5.38;
+
+my $message = "We are learning $language version $version.";
+print $message . "\n";
+
+my $path = "C:\\Users\\alice\\documents";
+print $path . "\n";
+
+my $multiline = "Line one.\nLine two.\nLine three.";
+print $multiline . "\n";
+
+my $name = "Bob";
+my $double = "Hello, $name!";
+print $double . "\n";
+
+my $single = 'Hello, $name!';
+print $single . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $name = "Elena";
+
+my $letter = <<END_LETTER;
+Dear $name,
+
+We are pleased to inform you that your application
+has been reviewed and approved. Please contact us
+at your earliest convenience to arrange the next steps.
+
+Sincerely,
+The Admissions Team
+END_LETTER
+
+print $letter;
+
+# Indented heredoc (Perl 5.26+)
+my $report = <<~END;
+    Monthly Report
+    ==============
+    Prepared on March 2026
+    Status: Complete
+    END
+
+print $report;
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $name   = "Alice";
+my $age    = 29;
+my $height = 1.6523;
+my $salary = 52750;
+
+printf("Name:   %s\n",   $name);
+printf("Age:    %d\n",   $age);
+printf("Height: %.2f\n", $height);
+printf("Salary: \$%d\n", $salary);
+
+printf("%-15s %5s %10s\n", "Name", "Age", "Salary");
+printf("%-15s %5d %10d\n", "Alice",   29,  52750);
+printf("%-15s %5d %10d\n", "Bob",     34,  61200);
+printf("%-15s %5d %10d\n", "Carol",   27,  48900);
+
+my $item     = "Widget";
+my $quantity = 42;
+my $unit     = 3.75;
+my $total    = $quantity * $unit;
+
+my $line = sprintf("%-20s  Qty: %4d  Unit: \$%6.2f  Total: \$%8.2f",
+                   $item, $quantity, $unit, $total);
+
+print $line . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $csv_line = "Alice,34,Madrid,Engineer";
+my @fields   = split(/,/, $csv_line);
+
+print "Name:       " . $fields[0] . "\n";
+print "Age:        " . $fields[1] . "\n";
+print "City:       " . $fields[2] . "\n";
+print "Profession: " . $fields[3] . "\n";
+
+my $sentence = "   The quick brown fox   ";
+my @words    = split(" ", $sentence);
+
+print "Number of words: " . scalar(@words) . "\n";
+
+foreach my $word (@words) {
+    print "Word: [" . $word . "]\n";
+}
+
+my @parts = ("one", "two", "three", "four");
+
+my $joined_comma = join(", ", @parts);
+my $joined_dash  = join(" - ", @parts);
+my $joined_none  = join("", @parts);
+
+print $joined_comma . "\n";
+print $joined_dash  . "\n";
+print $joined_none  . "\n";
+
+# Split, modify, and rejoin
+my $record = "Bob,28,London,Developer";
+my @rec_fields = split(/,/, $record);
+$rec_fields[2] = "Paris";
+my $updated = join(",", @rec_fields);
+print "Original: " . $record  . "\n";
+print "Updated:  " . $updated . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $word     = "programming";
+my $sentence = "Hello, World!";
+my $empty    = "";
+
+print "Length of word:     " . length($word)     . "\n";
+print "Length of sentence: " . length($sentence) . "\n";
+print "Length of empty:    " . length($empty)    . "\n";
+
+my $text = "The quick brown fox";
+
+my $first_three = substr($text, 0, 3);
+my $word_quick  = substr($text, 4, 5);
+my $from_brown  = substr($text, 10);
+
+print "First three chars:  " . $first_three . "\n";
+print "The word quick:     " . $word_quick  . "\n";
+print "From position 10:   " . $from_brown  . "\n";
+
+my $filename  = "report_2025_final.txt";
+my $extension = substr($filename, -3);
+my $last_four = substr($filename, -4);
+
+print "Extension: " . $extension . "\n";
+print "Last four: " . $last_four . "\n";
+
+my $sentence2 = "She sells seashells by the seashore";
+my $pos_sells = index($sentence2, "sells");
+my $pos_sea   = index($sentence2, "sea");
+my $pos_none  = index($sentence2, "mountains");
+
+print "Position of sells:     " . $pos_sells . "\n";
+print "Position of sea:       " . $pos_sea   . "\n";
+print "Position of mountains: " . $pos_none  . "\n";
