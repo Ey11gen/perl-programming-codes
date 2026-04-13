@@ -1,0 +1,294 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+package Animal;
+
+sub new {
+    my ($class, %args) = @_;
+    my $self = {
+        name    => $args{name}    // 'Unknown',
+        species => $args{species} // 'Unknown',
+        age     => $args{age}     // 0,
+    };
+    return bless $self, $class;
+}
+
+sub name    { return $_[0]->{name}    }
+sub species { return $_[0]->{species} }
+sub age     { return $_[0]->{age}     }
+
+sub describe {
+    my $self = shift;
+    return $self->{name} . " is a " . $self->{species} . ", age " . $self->{age};
+}
+
+sub birthday {
+    my $self = shift;
+    $self->{age}++;
+    return $self->{name} . " is now " . $self->{age} . " years old";
+}
+
+package main;
+
+my $cat = Animal->new(name => 'Whiskers', species => 'Cat', age => 3);
+my $dog = Animal->new(name => 'Rex',      species => 'Dog', age => 5);
+
+print $cat->describe()  . "\n";
+print $dog->describe()  . "\n";
+print $cat->birthday()  . "\n";
+print "Cat age: " . $cat->age() . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+package BankAccount;
+
+sub new {
+    my ($class, %args) = @_;
+    my $self = {
+        owner         => $args{owner}   // 'Anonymous',
+        balance       => $args{balance} // 0,
+        _transactions => [],
+    };
+    return bless $self, $class;
+}
+
+sub owner {
+    my ($self, $new_val) = @_;
+    $self->{owner} = $new_val if defined $new_val;
+    return $self->{owner};
+}
+
+sub balance { return $_[0]->{balance} }
+
+sub deposit {
+    my ($self, $amount) = @_;
+    die 'Deposit amount must be positive' unless $amount > 0;
+    $self->{balance} += $amount;
+    push @{$self->{_transactions}}, { type => 'deposit', amount => $amount };
+    return $self;
+}
+
+sub withdraw {
+    my ($self, $amount) = @_;
+    die 'Withdrawal amount must be positive' unless $amount > 0;
+    die 'Insufficient funds' if $amount > $self->{balance};
+    $self->{balance} -= $amount;
+    push @{$self->{_transactions}}, { type => 'withdraw', amount => $amount };
+    return $self;
+}
+
+sub transaction_count {
+    return scalar @{$_[0]->{_transactions}};
+}
+
+package main;
+
+my $acct = BankAccount->new(owner => 'Alice', balance => 1000);
+printf("Owner: %s, Balance: %.2f\n", $acct->owner(), $acct->balance());
+
+$acct->deposit(500)->deposit(250)->withdraw(100);
+printf("After transactions. Balance: %.2f\n", $acct->balance());
+printf("Transaction count: %d\n", $acct->transaction_count());
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+package Animal;
+
+sub new {
+    my ($class, %args) = @_;
+    return bless { name => $args{name} // 'Unknown',
+                   sound => $args{sound} // '...' }, $class;
+}
+
+sub name  { return $_[0]->{name}  }
+sub sound { return $_[0]->{sound} }
+
+sub speak {
+    my $self = shift;
+    printf("%s says %s\n", $self->name(), $self->sound());
+}
+
+sub describe {
+    my $self = shift;
+    return ref($self) . " named " . $self->name();
+}
+
+package Dog;
+our @ISA = ('Animal');
+
+sub new {
+    my ($class, %args) = @_;
+    $args{sound} //= 'Woof';
+    my $self = $class->SUPER::new(%args);
+    $self->{tricks} = [];
+    return $self;
+}
+
+sub learn_trick {
+    my ($self, $trick) = @_;
+    push @{$self->{tricks}}, $trick;
+    return $self;
+}
+
+sub show_tricks {
+    my $self = shift;
+    if (@{$self->{tricks}}) {
+        print $self->name() . " knows: " . join(", ", @{$self->{tricks}}) . "\n";
+    } else {
+        print $self->name() . " knows no tricks yet.\n";
+    }
+}
+
+package Cat;
+our @ISA = ('Animal');
+
+sub new {
+    my ($class, %args) = @_;
+    $args{sound} //= 'Meow';
+    return $class->SUPER::new(%args);
+}
+
+sub speak {
+    my $self = shift;
+    printf("%s ignores you (but technically says %s)\n",
+           $self->name(), $self->sound());
+}
+
+package main;
+
+my $dog = Dog->new(name => 'Rex');
+my $cat = Cat->new(name => 'Mittens');
+
+$dog->speak();
+$cat->speak();
+
+$dog->learn_trick('sit')->learn_trick('roll over')->learn_trick('fetch');
+$dog->show_tricks();
+
+print $dog->describe() . "\n";
+print $cat->describe() . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+# Install Moo first: cpanm Moo
+
+package Person;
+use Moo;
+
+has 'name' => (
+    is       => 'rw',
+    required => 1,
+);
+
+has 'age' => (
+    is      => 'rw',
+    default => 0,
+);
+
+has 'email' => (
+    is        => 'rw',
+    predicate => 'has_email',
+);
+
+sub greet {
+    my $self = shift;
+    return "Hello, I am " . $self->name() . " and I am " . $self->age() . " years old.";
+}
+
+package Employee;
+use Moo;
+extends 'Person';
+
+has 'department' => (is => 'rw', required => 1);
+has 'salary'     => (is => 'rw', default  => 0);
+
+sub introduce {
+    my $self = shift;
+    return $self->name() . " works in " . $self->department() .
+           ", salary: " . $self->salary();
+}
+
+package main;
+
+my $p1 = Person->new(name => 'Alice', age => 30, email => 'alice@example.com');
+my $p2 = Person->new(name => 'Bob');
+
+print $p1->greet() . "\n";
+print $p2->greet() . "\n";
+
+$p2->age(25);
+print "Bob is now " . $p2->age() . "\n";
+
+print "Alice has email: " . ($p1->has_email() ? "yes" : "no") . "\n";
+print "Bob has email:   " . ($p2->has_email() ? "yes" : "no") . "\n";
+
+my $emp = Employee->new(
+    name       => 'Carol',
+    age        => 28,
+    department => 'Engineering',
+    salary     => 75000,
+);
+
+print $emp->greet()     . "\n";
+print $emp->introduce() . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+package Vector;
+use overload
+    '+'  => \&add,
+    '-'  => \&subtract,
+    '*'  => \&multiply,
+    '""' => \&stringify;
+
+sub new {
+    my ($class, $x, $y) = @_;
+    return bless { x => $x, y => $y }, $class;
+}
+
+sub x { return $_[0]->{x} }
+sub y { return $_[0]->{y} }
+
+sub add {
+    my ($a, $b) = @_;
+    return Vector->new($a->{x} + $b->{x}, $a->{y} + $b->{y});
+}
+
+sub subtract {
+    my ($a, $b) = @_;
+    return Vector->new($a->{x} - $b->{x}, $a->{y} - $b->{y});
+}
+
+sub multiply {
+    my ($vec, $scalar) = @_;
+    return Vector->new($vec->{x} * $scalar, $vec->{y} * $scalar);
+}
+
+sub stringify {
+    my $self = shift;
+    return sprintf("Vector(%g, %g)", $self->{x}, $self->{y});
+}
+
+package main;
+
+my $v1 = Vector->new(3, 4);
+my $v2 = Vector->new(1, 2);
+
+my $sum    = $v1 + $v2;
+my $diff   = $v1 - $v2;
+my $scaled = $v1 * 3;
+
+print "v1:     " . $v1     . "\n";
+print "v2:     " . $v2     . "\n";
+print "sum:    " . $sum    . "\n";
+print "diff:   " . $diff   . "\n";
+print "scaled: " . $scaled . "\n";
