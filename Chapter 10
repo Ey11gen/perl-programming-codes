@@ -1,0 +1,167 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $dir = ".";
+
+opendir(my $dh, $dir) or die "Cannot open directory: $!\n";
+
+my @entries = readdir($dh);
+closedir($dh);
+
+my @files = grep { -f "$dir/$_" } @entries;
+my @dirs  = grep { -d "$dir/$_" && $_ ne "." && $_ ne ".." } @entries;
+
+print "Files:\n";
+print '  ' . $_ . "\n" foreach sort @files;
+
+print "Subdirectories:\n";
+print '  ' . $_ . "\n" foreach sort @dirs;
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+sub safe_read_file {
+    my $path = shift;
+
+    unless (-e $path) {
+        print "File does not exist: " . $path . "\n";
+        return;
+    }
+
+    unless (-f $path) {
+        print "Path is not a regular file: " . $path . "\n";
+        return;
+    }
+
+    unless (-r $path) {
+        print "File is not readable: " . $path . "\n";
+        return;
+    }
+
+    if (-z $path) {
+        print "File is empty: " . $path . "\n";
+        return;
+    }
+
+    open(my $fh, "<", $path) or die "Cannot open: $!\n";
+    my @lines = <$fh>;
+    close($fh);
+    chomp @lines;
+    return @lines;
+}
+
+# Test with a real file
+my $test_file = "/etc/hosts";
+my @content = safe_read_file($test_file);
+print "Lines read: " . scalar(@content) . "\n" if @content;
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $log_file = "application.log";
+
+sub write_log {
+    my ($level, $message) = @_;
+
+    open(my $log, ">>", $log_file) or die "Cannot open log: $!\n";
+
+    my @time_parts = localtime(time());
+    my $timestamp = sprintf('%04d-%02d-%02d %02d:%02d:%02d',
+        $time_parts[5] + 1900,
+        $time_parts[4] + 1,
+        $time_parts[3],
+        $time_parts[2],
+        $time_parts[1],
+        $time_parts[0]
+    );
+
+    print $log "[\$timestamp] [\$level] \$message\n";
+    close($log);
+}
+
+write_log("INFO",    "Application started");
+write_log("WARNING", "Low disk space detected");
+write_log("ERROR",   "Failed to connect to database");
+write_log("INFO",    "Retrying connection");
+
+print "Log entries written to $log_file\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+# Create a sample file to read
+my $filename = "example.txt";
+open(my $wfh, '>', $filename) or die "Cannot create: $!\n";
+print $wfh "Line one\nLine two\nLine three\n";
+close($wfh);
+
+# Now read it back
+open(my $fh, "<", $filename) or die "Cannot open $filename: $!\n";
+
+while (my $line = <$fh>) {
+    chomp $line;
+    print "Read: " . $line . "\n";
+}
+
+close($fh);
+print "Done reading.\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+# Create a sample file
+my $filename = "document.txt";
+open(my $wfh, '>', $filename) or die $!;
+print $wfh "the quick brown fox\nthe lazy dog\nthe cat sat";
+close($wfh);
+
+# Slurp entire file
+open(my $fh, "<", $filename) or die "Cannot open: $!\n";
+
+my $entire_file = do { local $/; <$fh> };
+
+close($fh);
+
+print "File length: " . length($entire_file) . " characters\n";
+
+my $count = () = $entire_file =~ /\bthe\b/gi;
+print "Occurrences of \"the\": " . $count . "\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+print "Enter your name: ";
+my $name = <STDIN>;
+chomp $name;
+
+print "Enter your age: ";
+my $age = <STDIN>;
+chomp $age;
+
+if ($age =~ /^\d+$/ && $age >= 0 && $age <= 150) {
+    print "Hello, " . $name . "! You are " . $age . " years old.\n";
+} else {
+    print STDERR "Invalid age entered: " . $age . "\n";
+    exit 1;
+}
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+my $output_file = "results.txt";
+
+open(my $out, ">", $output_file) or die "Cannot write to $output_file: $!\n";
+
+print $out "Line one\n";
+print $out "Line two\n";
+print $out "Line three\n";
+
+close($out);
+print "Written to " . $output_file . "\n";
