@@ -1,0 +1,28 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+# Store the name of the person we are greeting
+my $name = "World";
+
+# Build the full greeting by joining text together
+my $greeting = "Hello, " . $name . "!";
+
+# Display the greeting on the screen
+print $greeting . "\n";
+
+# Display a second line of output
+print "Welcome to Perl programming.\n";
+
+#!/usr/bin/perl
+use strict;
+use warnings;
+
+print "Hello, World!\n";
+
+#!/usr/bin/env perl
+use strict;
+use warnings;
+
+# Portable shebang line - works even when Perl is in a non-standard location
+print "This script uses the portable shebang line.\n";
